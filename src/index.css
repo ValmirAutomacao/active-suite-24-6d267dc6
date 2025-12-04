@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* AcademyManager Design System - Dark Theme Academy Management */
+
+@layer base {
+  :root {
+    /* Primary Colors - Academy Management System */
+    --background: 0 0% 0%;  /* Pure Black */
+    --foreground: 0 0% 100%;  /* Pure White */
+
+    --card: 0 0% 7%;  /* Dark Gray Cards */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+
+    /* Bayer Red Primary */
+    --primary: 0 75% 44%;  /* #E31E24 Bayer Red */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 0 75% 40%;
+    --primary-glow: 0 75% 44%;
+
+    --secondary: 0 0% 12%;  /* Dark Gray */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 0 75% 44%;  /* Bayer Red Accent */
+    --accent-foreground: 0 0% 100%;
+
+    /* Status Colors */
+    --success: 142 76% 36%;  /* Success Green */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;  /* Warning Yellow */
+    --warning-foreground: 0 0% 0%;
+    
+    --destructive: 0 84% 60%;  /* Error Red */
+    --destructive-foreground: 0 0% 100%;
+    
+    --info: 217 91% 60%;  /* Info Blue */
+    --info-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 0 75% 44%;
+
+    --radius: 0.5rem;
+
+    /* Academy Specific Design Tokens */
+    --academy-gradient: linear-gradient(135deg, hsl(0, 75%, 44%), hsl(0, 75%, 35%));
+    --academy-glow: 0 0 30px hsl(0 75% 44% / 0.3);
+    --academy-shadow: 0 10px 30px -10px hsl(0 0% 0% / 0.5);
+    --academy-border: 1px solid hsl(0 0% 15%);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
