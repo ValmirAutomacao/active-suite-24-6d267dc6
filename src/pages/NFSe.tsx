@@ -18,10 +18,11 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import StatusBadge from '@/components/shared/StatusBadge';
-import { mockPayments } from '@/data/mockPayments';
-import { mockStudents } from '@/data/mockStudents';
+import { usePayments } from '@/hooks/usePayments';
+import { useStudents } from '@/hooks/useStudents';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Mock data para NFS-e emitidas
+// Mock data para NFS-e emitidas (será substituído por dados do banco futuramente)
 const mockNFSe = [
   {
     id: 'nfse-001',
@@ -59,10 +60,14 @@ const NFSe: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const { data: payments, isLoading: paymentsLoading } = usePayments();
+  const { data: students, isLoading: studentsLoading } = useStudents();
+
   // Filtrar mensalidades pagas
   const paidPayments = useMemo(() => {
-    return mockPayments.filter(payment => payment.status === 'paid');
-  }, []);
+    if (!payments) return [];
+    return payments.filter(payment => payment.status === 'paid');
+  }, [payments]);
 
   // Filtrar mensalidades baseado na busca
   const filteredPayments = useMemo(() => {
@@ -71,12 +76,12 @@ const NFSe: React.FC = () => {
     return paidPayments.filter(payment => {
       switch (searchType) {
         case 'student':
-          return payment.studentName.toLowerCase().includes(searchValue.toLowerCase());
+          return payment.student_name.toLowerCase().includes(searchValue.toLowerCase());
         case 'number':
           return payment.id.includes(searchValue);
         case 'period':
           if (!startDate || !endDate) return true;
-          const paymentDate = new Date(payment.dueDate);
+          const paymentDate = new Date(payment.due_date);
           const start = new Date(startDate);
           const end = new Date(endDate);
           return paymentDate >= start && paymentDate <= end;
@@ -131,12 +136,6 @@ const NFSe: React.FC = () => {
       }
 
       // Simular download do PDF
-      // Em produção, seria uma chamada à API da prefeitura
-      const link = document.createElement('a');
-      link.href = `data:application/pdf;base64,`; // URL fictícia para demonstração
-      link.download = `NFSE_${nfse.numero}_${nfse.guardianName.replace(/\s+/g, '_')}.pdf`;
-
-      // Simular processamento
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       toast({
@@ -145,7 +144,6 @@ const NFSe: React.FC = () => {
         variant: "default"
       });
 
-      // Em um cenário real, isso abriria o PDF ou faria download
       console.log(`Gerando PDF para NFS-e ${nfse.numero}`);
 
     } catch (error) {
@@ -185,23 +183,11 @@ const NFSe: React.FC = () => {
       // Simular cancelamento na API da prefeitura
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Atualizar o status no mock (em produção seria uma chamada à API)
-      const nfseIndex = mockNFSe.findIndex(n => n.id === nfseId);
-      if (nfseIndex !== -1) {
-        mockNFSe[nfseIndex] = {
-          ...mockNFSe[nfseIndex],
-          status: 'cancelada'
-        };
-      }
-
       toast({
         title: "NFS-e Cancelada",
         description: `NFS-e ${nfse.numero} foi cancelada com sucesso`,
         variant: "default"
       });
-
-      // Forçar re-render
-      window.location.reload();
 
     } catch (error) {
       toast({
@@ -212,6 +198,11 @@ const NFSe: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getGuardianName = (studentId: string) => {
+    const student = students?.find(s => s.id === studentId);
+    return student?.guardian?.name || 'Não informado';
   };
 
   return (
@@ -333,59 +324,66 @@ const NFSe: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {filteredPayments.map(payment => {
-                const hasNFSe = mockNFSe.some(nfse => nfse.paymentId === payment.id);
-                const student = mockStudents.find(s => s.name === payment.studentName);
+            {paymentsLoading || studentsLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-24 rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {filteredPayments.map(payment => {
+                  const hasNFSe = mockNFSe.some(nfse => nfse.paymentId === payment.id);
 
-                return (
-                  <div key={payment.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-foreground">{payment.studentName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Responsável: {student?.guardian.name || 'Não informado'}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {payment.sport} - {payment.month}
-                        </p>
+                  return (
+                    <div key={payment.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-foreground">{payment.student_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Responsável: {getGuardianName(payment.student_id)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {payment.sport} - {payment.month}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-foreground">
+                            R$ {payment.amount.toFixed(2)}
+                          </p>
+                          <StatusBadge status={payment.status} size="sm" />
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-foreground">
-                          R$ {payment.amount.toFixed(2)}
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          Pago em: {new Date(payment.due_date).toLocaleDateString('pt-BR')}
                         </p>
-                        <StatusBadge status={payment.status} size="sm" />
+                        {hasNFSe ? (
+                          <span className="text-xs text-success bg-success/10 px-2 py-1 rounded">
+                            NFS-e Emitida
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleEmitNFSe(payment.id)}
+                            className="flex items-center gap-1"
+                          >
+                            <Receipt className="w-3 h-3" />
+                            Emitir NFS-e
+                          </Button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex justify-between items-center pt-2 border-t">
-                      <p className="text-xs text-muted-foreground">
-                        Pago em: {new Date(payment.dueDate).toLocaleDateString('pt-BR')}
-                      </p>
-                      {hasNFSe ? (
-                        <span className="text-xs text-success bg-success/10 px-2 py-1 rounded">
-                          NFS-e Emitida
-                        </span>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => handleEmitNFSe(payment.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <Receipt className="w-3 h-3" />
-                          Emitir NFS-e
-                        </Button>
-                      )}
-                    </div>
+                  );
+                })}
+                {filteredPayments.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Receipt className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>Nenhuma mensalidade paga encontrada</p>
                   </div>
-                );
-              })}
-              {filteredPayments.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Receipt className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhuma mensalidade paga encontrada</p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -466,16 +464,10 @@ const NFSe: React.FC = () => {
                             </AlertDialogTitle>
                             <AlertDialogDescription>
                               Esta ação não pode ser desfeita. A NFS-e será cancelada definitivamente na Prefeitura de Barueri.
-                              <br /><br />
-                              <strong>Dados da NFS-e:</strong><br />
-                              • Aluno: {nfse.studentName}<br />
-                              • Responsável: {nfse.guardianName}<br />
-                              • Valor: R$ {nfse.valor.toFixed(2)}<br />
-                              • Data de Emissão: {new Date(nfse.dataEmissao).toLocaleDateString('pt-BR')}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Manter NFS-e</AlertDialogCancel>
+                            <AlertDialogCancel>Voltar</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleCancelNFSe(nfse.id, 'Cancelamento solicitado pelo usuário')}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -485,11 +477,6 @@ const NFSe: React.FC = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    )}
-                    {nfse.status === 'cancelada' && (
-                      <span className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
-                        Cancelada
-                      </span>
                     )}
                   </div>
                 </div>

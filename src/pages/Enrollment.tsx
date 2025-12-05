@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { User, Users, Phone, Heart, Trophy, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react';
-import { mockSports } from '@/data/mockSports';
+import { useSports } from '@/hooks/useSports';
 import Button from '@/components/shared/Button';
 import FormInput from '@/components/shared/FormInput';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface FormData {
   // Personal Data
@@ -48,6 +49,8 @@ interface FormData {
 
 const Enrollment: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const { data: sports, isLoading: sportsLoading } = useSports();
+  
   const [formData, setFormData] = useState<FormData>({
     name: '',
     birthDate: '',
@@ -113,10 +116,19 @@ const Enrollment: React.FC = () => {
   };
 
   const calculateTotalFee = () => {
+    if (!sports) return 0;
     return formData.selectedSports.reduce((total, sportId) => {
-      const sport = mockSports.find(s => s.id === sportId);
+      const sport = sports.find(s => s.id === sportId);
       return total + (sport?.monthlyFee || 0);
     }, 0);
+  };
+
+  const getAgeRange = (sport: any) => {
+    const ageRange = sport.ageRange as { min?: number; max?: number } | null;
+    if (ageRange && typeof ageRange === 'object') {
+      return `${ageRange.min || 0}-${ageRange.max || 99}`;
+    }
+    return '0-99';
   };
 
   const renderStep = () => {
@@ -334,38 +346,46 @@ const Enrollment: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-foreground mb-4">Seleção de Modalidades</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mockSports.map(sport => (
-                <div key={sport.id} className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                  formData.selectedSports.includes(sport.id) 
-                    ? 'border-primary bg-primary/10' 
-                    : 'border-border hover:border-primary/50'
-                }`}
-                onClick={() => {
-                  const newSports = formData.selectedSports.includes(sport.id)
-                    ? formData.selectedSports.filter(id => id !== sport.id)
-                    : [...formData.selectedSports, sport.id];
-                  updateFormData('selectedSports', newSports);
-                }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-foreground">{sport.name}</h3>
-                    <span className="text-lg font-bold text-primary">R$ {(sport.monthlyFee || 0).toFixed(2)}</span>
+            {sportsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-32 rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sports?.map(sport => (
+                  <div key={sport.id} className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                    formData.selectedSports.includes(sport.id) 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => {
+                    const newSports = formData.selectedSports.includes(sport.id)
+                      ? formData.selectedSports.filter(id => id !== sport.id)
+                      : [...formData.selectedSports, sport.id];
+                    updateFormData('selectedSports', newSports);
+                  }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-foreground">{sport.name}</h3>
+                      <span className="text-lg font-bold text-primary">R$ {(sport.monthlyFee || 0).toFixed(2)}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{sport.description}</p>
+                    <div className="text-xs text-muted-foreground">
+                      <p>Idade: {getAgeRange(sport)} anos</p>
+                      <p>Instrutor: {sport.instructor || 'Não definido'}</p>
+                      <p>Horários: {sport.weeklyHours}h/semana</p>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">{sport.description}</p>
-                  <div className="text-xs text-muted-foreground">
-                    <p>Idade: {sport.ageRange.min}-{sport.ageRange.max} anos</p>
-                    <p>Instrutor: {sport.instructor}</p>
-                    <p>Horários: {sport.weeklyHours}h/semana</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             {formData.selectedSports.length > 0 && (
               <div className="bg-primary/10 border border-primary rounded-lg p-4">
                 <h3 className="font-semibold text-foreground mb-2">Resumo da Matrícula</h3>
                 <div className="space-y-1">
                   {formData.selectedSports.map(sportId => {
-                    const sport = mockSports.find(s => s.id === sportId);
+                    const sport = sports?.find(s => s.id === sportId);
                     return sport ? (
                       <div key={sportId} className="flex justify-between text-sm">
                         <span className="text-foreground">{sport.name}</span>
@@ -413,7 +433,7 @@ const Enrollment: React.FC = () => {
               <h3 className="font-semibold text-foreground mb-3">Modalidades Selecionadas</h3>
               <div className="space-y-2">
                 {formData.selectedSports.map(sportId => {
-                  const sport = mockSports.find(s => s.id === sportId);
+                  const sport = sports?.find(s => s.id === sportId);
                   return sport ? (
                     <div key={sportId} className="flex justify-between">
                       <span className="text-foreground">{sport.name}</span>
@@ -445,63 +465,59 @@ const Enrollment: React.FC = () => {
 
       {/* Stepper */}
       <div className="flex justify-center mb-8">
-        <div className="flex items-center">
+        <div className="flex items-center space-x-2">
           {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${
-                currentStep === step.id 
-                  ? 'border-primary bg-primary text-primary-foreground' 
-                  : currentStep > step.id
-                    ? 'border-success bg-success text-success-foreground'
-                    : 'border-border bg-card text-muted-foreground'
-              }`}>
+            <React.Fragment key={step.id}>
+              <button
+                onClick={() => setCurrentStep(step.id)}
+                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
+                  currentStep >= step.id 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
                 <step.icon className="w-5 h-5" />
-              </div>
-              <div className="ml-3 mr-6">
-                <p className={`text-sm font-medium ${
-                  currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'
-                }`}>
-                  {step.title}
-                </p>
-              </div>
+              </button>
               {index < steps.length - 1 && (
-                <div className={`w-16 h-1 mr-6 ${
-                  currentStep > step.id ? 'bg-success' : 'bg-border'
+                <div className={`w-8 h-1 rounded ${
+                  currentStep > step.id ? 'bg-primary' : 'bg-muted'
                 }`} />
               )}
-            </div>
+            </React.Fragment>
           ))}
         </div>
       </div>
 
-      {/* Form Content */}
-      <div className="max-w-4xl mx-auto bg-card border border-border rounded-lg p-8 shadow-academy">
+      {/* Step Content */}
+      <div className="bg-card border border-border rounded-lg p-6 shadow-academy mb-6">
         {renderStep()}
+      </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-border">
-          <Button 
-            variant="outline"
-            onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-            disabled={currentStep === 1}
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Anterior
-          </Button>
-          <Button 
+      {/* Navigation Buttons */}
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
+          disabled={currentStep === 1}
+        >
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Anterior
+        </Button>
+
+        {currentStep < 6 ? (
+          <Button
             variant="primary"
-            onClick={() => {
-              if (currentStep < 6) {
-                setCurrentStep(currentStep + 1);
-              } else {
-                handleSubmit();
-              }
-            }}
+            onClick={() => setCurrentStep(prev => Math.min(6, prev + 1))}
           >
-            {currentStep === 6 ? 'Finalizar Matrícula' : 'Próximo'}
-            {currentStep < 6 && <ChevronRight className="w-4 h-4" />}
+            Próximo
+            <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
-        </div>
+        ) : (
+          <Button variant="primary" onClick={handleSubmit}>
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Confirmar Matrícula
+          </Button>
+        )}
       </div>
     </div>
   );
