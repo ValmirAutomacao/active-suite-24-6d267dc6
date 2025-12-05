@@ -8,17 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { User, Users, MapPin, Heart, Trophy, Calendar, ArrowRight, DollarSign } from 'lucide-react';
-import { mockSports } from '@/data/mockSports';
-import { Student } from '@/types';
+import { useSports } from '@/hooks/useSports';
 import { toast } from 'sonner';
 import PhotoUpload from '@/components/shared/PhotoUpload';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const EnrollmentForm: React.FC = () => {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuth();
+  const { data: sports, isLoading: sportsLoading } = useSports();
   const [currentTab, setCurrentTab] = useState('personal');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,7 +40,7 @@ const EnrollmentForm: React.FC = () => {
       name: '',
       cpf: '',
       phone: '',
-      email: user?.email || '',
+      email: '',
       profession: ''
     },
     // Contatos de Emergência
@@ -68,15 +67,10 @@ const EnrollmentForm: React.FC = () => {
     }
   });
 
-  const generateModalityUuid = (sportId: string) => {
-    const paddedId = sportId.padStart(8, '0');
-    return `${paddedId}-0000-0000-0000-000000000000`;
-  };
-
   const handleInputChange = (field: string, value: any) => {
     const keys = field.split('.');
     setFormData(prev => {
-      const newData = { ...prev };
+      const newData = { ...prev } as any;
       let current = newData;
 
       for (let i = 0; i < keys.length - 1; i++) {
@@ -92,7 +86,7 @@ const EnrollmentForm: React.FC = () => {
   const handleArrayChange = (arrayName: string, index: number, field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [arrayName]: prev[arrayName].map((item, i) =>
+      [arrayName]: (prev as any)[arrayName].map((item: any, i: number) =>
         i === index ? { ...item, [field]: value } : item
       )
     }));
@@ -171,22 +165,22 @@ const EnrollmentForm: React.FC = () => {
     try {
       console.log('Confirmando matrícula...', formData);
 
-      // Criar estudante na tabela students (usando nomes corretos das colunas)
+      // Criar estudante na tabela students
       const studentData = {
         name: formData.name,
         cpf: formData.cpf,
-        birthDate: formData.birthDate, // ATENÇÃO: verificar se o banco espera 'birthDate' ou 'birth_date'
+        birthDate: formData.birthDate,
         address: formData.address,
         guardian: formData.guardian,
         emergencyContacts: formData.emergencyContacts,
-        healthInfo: formData.medical, // Campo correto é 'healthInfo'
+        healthInfo: formData.medical,
         photo: formData.photo,
-        status: 'effective',
+        status: 'active',
         monthlyFee: formData.paymentInfo.monthlyFee,
-        enrollment_fee: formData.paymentInfo.enrollmentFee, // Campo adicionado no script
-        payment_due_date: parseInt(formData.paymentInfo.dueDate), // Campo adicionado no script
-        enrollmentDate: new Date().toISOString().split('T')[0], // Campo obrigatório como DATE
-        enrolledSports: [formData.selectedSportId] // Array de sports
+        enrollment_fee: formData.paymentInfo.enrollmentFee,
+        payment_due_date: parseInt(formData.paymentInfo.dueDate),
+        enrollmentDate: new Date().toISOString().split('T')[0],
+        enrolledSports: [formData.selectedSportId]
       };
 
       const { data: student, error: studentError } = await supabase
@@ -202,7 +196,7 @@ const EnrollmentForm: React.FC = () => {
       // Criar matrícula na modalidade escolhida
       const enrollmentData = {
         student_id: student.id,
-        modality_id: generateModalityUuid(formData.selectedSportId),
+        modality_id: formData.selectedSportId,
         status: 'active',
         monthly_fee: formData.paymentInfo.monthlyFee,
         enrollment_fee: formData.paymentInfo.enrollmentFee,
@@ -217,15 +211,10 @@ const EnrollmentForm: React.FC = () => {
 
       if (enrollmentError) throw enrollmentError;
 
-      // Atualizar perfil do usuário para indicar que completou a matrícula
-      await updateProfile({
-        onboarding_completed: true
-      });
-
       toast.success('Matrícula realizada com sucesso!');
 
-      // Redirecionar para dashboard de matrícula
-      navigate('/enrollment-dashboard');
+      // Redirecionar para lista de alunos
+      navigate('/students');
 
     } catch (error: any) {
       console.error('Erro ao confirmar matrícula:', error);
@@ -235,7 +224,15 @@ const EnrollmentForm: React.FC = () => {
     }
   };
 
-  const selectedSport = mockSports.find(sport => sport.id === formData.selectedSportId);
+  const selectedSport = sports?.find(sport => sport.id === formData.selectedSportId);
+
+  const getAgeRange = (sport: any) => {
+    const ageRange = sport.ageRange as { min?: number; max?: number } | null;
+    if (ageRange && typeof ageRange === 'object') {
+      return `${ageRange.min || 0}-${ageRange.max || 99}`;
+    }
+    return '0-99';
+  };
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
@@ -467,18 +464,20 @@ const EnrollmentForm: React.FC = () => {
                       id="guardianProfession"
                       value={formData.guardian.profession}
                       onChange={(e) => handleInputChange('guardian.profession', e.target.value)}
-                      placeholder="Profissão do responsável"
+                      placeholder="Profissão"
                     />
                   </div>
                 </div>
+              </div>
 
+              <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Contatos de Emergência</h3>
                 {formData.emergencyContacts.map((contact, index) => (
-                  <div key={index} className="p-4 border rounded-lg space-y-4">
+                  <div key={index} className="border rounded-lg p-4 space-y-4">
                     <h4 className="font-medium">Contato {index + 1}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Nome do Contato</Label>
+                        <Label>Nome</Label>
                         <Input
                           value={contact.name}
                           onChange={(e) => handleArrayChange('emergencyContacts', index, 'name', e.target.value)}
@@ -516,11 +515,11 @@ const EnrollmentForm: React.FC = () => {
               </div>
             </TabsContent>
 
-            {/* Tab Informações Médicas */}
+            {/* Tab Médicas */}
             <TabsContent value="medical" className="space-y-6">
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="allergies">Alergias Conhecidas</Label>
+                  <Label htmlFor="allergies">Alergias</Label>
                   <Textarea
                     id="allergies"
                     value={formData.medical.allergies}
@@ -529,30 +528,30 @@ const EnrollmentForm: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="medications">Medicamentos em Uso</Label>
+                  <Label htmlFor="medications">Medicamentos em uso</Label>
                   <Textarea
                     id="medications"
                     value={formData.medical.medications}
                     onChange={(e) => handleInputChange('medical.medications', e.target.value)}
-                    placeholder="Medicamentos em uso contínuo"
+                    placeholder="Liste medicamentos em uso contínuo"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="conditions">Condições Médicas</Label>
+                  <Label htmlFor="conditions">Condições médicas</Label>
                   <Textarea
                     id="conditions"
                     value={formData.medical.conditions}
                     onChange={(e) => handleInputChange('medical.conditions', e.target.value)}
-                    placeholder="Restrições ou limitações médicas"
+                    placeholder="Condições médicas relevantes"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="doctor">Médico de Referência</Label>
+                  <Label htmlFor="doctor">Médico/Contato</Label>
                   <Input
                     id="doctor"
                     value={formData.medical.doctor}
                     onChange={(e) => handleInputChange('medical.doctor', e.target.value)}
-                    placeholder="Dr. João - (00) 0000-0000"
+                    placeholder="Dr. Nome - (00) 0000-0000"
                   />
                 </div>
                 <div>
@@ -569,187 +568,141 @@ const EnrollmentForm: React.FC = () => {
 
             {/* Tab Modalidade */}
             <TabsContent value="sport" className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Escolha a Modalidade Esportiva</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mockSports.map((sport) => (
-                    <Card
-                      key={sport.id}
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        formData.selectedSportId === sport.id
-                          ? 'ring-2 ring-primary border-primary'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() => handleInputChange('selectedSportId', sport.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex flex-col items-center text-center space-y-2">
-                          <Trophy className="w-8 h-8 text-primary" />
-                          <h4 className="font-semibold">{sport.name}</h4>
-                          <p className="text-sm text-muted-foreground">{sport.description}</p>
-                          <div className="flex flex-wrap gap-1">
-                            {sport.ageRange ? (
-                              <Badge variant="secondary" className="text-xs">
-                                {sport.ageRange.min} - {sport.ageRange.max} anos
-                              </Badge>
-                            ) : null}
-                          </div>
-                          <p className="text-sm font-medium text-primary">
-                            R$ {sport.monthlyFee?.toFixed(2) || '150,00'}/mês
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
+              <h3 className="text-lg font-semibold">Selecione a Modalidade</h3>
+              {sportsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-40 rounded-lg" />
                   ))}
                 </div>
-
-                {selectedSport && (
-                  <Card className="mt-6">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5" />
-                        {selectedSport.name} Selecionado
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <p><strong>Descrição:</strong> {selectedSport.description}</p>
-                          <p><strong>Idades:</strong> {selectedSport.ageRange ? `${selectedSport.ageRange.min} - ${selectedSport.ageRange.max} anos` : 'A definir'}</p>
-                          <p><strong>Horários:</strong> {selectedSport.schedule?.map(s => `${s.day} ${s.startTime}-${s.endTime}`).join(', ') || 'A definir'}</p>
-                        </div>
-                        <div>
-                          <p><strong>Local:</strong> Academia Principal</p>
-                          <p><strong>Mensalidade:</strong> R$ {selectedSport.monthlyFee?.toFixed(2) || '150,00'}</p>
-                        </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {sports?.map(sport => (
+                    <div
+                      key={sport.id}
+                      onClick={() => {
+                        handleInputChange('selectedSportId', sport.id);
+                        handleInputChange('paymentInfo.monthlyFee', sport.monthlyFee);
+                      }}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        formData.selectedSportId === sport.id
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-foreground">{sport.name}</h4>
+                        <Badge variant={sport.status === 'active' ? 'default' : 'secondary'}>
+                          {sport.status === 'active' ? 'Disponível' : 'Indisponível'}
+                        </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+                      <p className="text-sm text-muted-foreground mb-2">{sport.description}</p>
+                      <div className="text-sm space-y-1">
+                        <p><span className="text-muted-foreground">Idade:</span> {getAgeRange(sport)} anos</p>
+                        <p><span className="text-muted-foreground">Instrutor:</span> {sport.instructor || 'A definir'}</p>
+                        <p><span className="text-muted-foreground">Carga horária:</span> {sport.weeklyHours}h/semana</p>
+                        <p className="text-primary font-semibold">R$ {sport.monthlyFee.toFixed(2)}/mês</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             {/* Tab Pagamento */}
             <TabsContent value="payment" className="space-y-6">
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="w-5 h-5" />
-                      Informações de Pagamento
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Valor da Mensalidade</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={formData.paymentInfo.monthlyFee}
-                          onChange={(e) => handleInputChange('paymentInfo.monthlyFee', parseFloat(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <Label>Taxa de Matrícula</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={formData.paymentInfo.enrollmentFee}
-                          onChange={(e) => handleInputChange('paymentInfo.enrollmentFee', parseFloat(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <Label>Forma de Pagamento *</Label>
-                        <Select onValueChange={(value) => handleInputChange('paymentInfo.paymentMethod', value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a forma de pagamento" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                            <SelectItem value="debit_card">Cartão de Débito</SelectItem>
-                            <SelectItem value="bank_slip">Boleto Bancário</SelectItem>
-                            <SelectItem value="pix">PIX</SelectItem>
-                            <SelectItem value="bank_transfer">Transferência Bancária</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Dia de Vencimento</Label>
-                        <Select
-                          value={formData.paymentInfo.dueDate}
-                          onValueChange={(value) => handleInputChange('paymentInfo.dueDate', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Dia do vencimento" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from({length: 28}, (_, i) => i + 1).map(day => (
-                              <SelectItem key={day} value={day.toString()}>
-                                Dia {day}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Informações de Pagamento</h3>
+                  
+                  <div>
+                    <Label htmlFor="paymentMethod">Forma de Pagamento *</Label>
+                    <Select onValueChange={(value) => handleInputChange('paymentInfo.paymentMethod', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a forma de pagamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pix">PIX</SelectItem>
+                        <SelectItem value="boleto">Boleto Bancário</SelectItem>
+                        <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
+                        <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
+                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-semibold text-blue-800 mb-2">Resumo da Matrícula</h4>
-                      <div className="space-y-1 text-sm">
-                        <p><strong>Modalidade:</strong> {selectedSport?.name || 'Não selecionada'}</p>
-                        <p><strong>Taxa de Matrícula:</strong> R$ {formData.paymentInfo.enrollmentFee.toFixed(2)}</p>
-                        <p><strong>Mensalidade:</strong> R$ {formData.paymentInfo.monthlyFee.toFixed(2)}</p>
-                        <p><strong>Total Inicial:</strong> R$ {(formData.paymentInfo.enrollmentFee + formData.paymentInfo.monthlyFee).toFixed(2)}</p>
+                  <div>
+                    <Label htmlFor="dueDate">Dia do Vencimento</Label>
+                    <Select 
+                      value={formData.paymentInfo.dueDate}
+                      onValueChange={(value) => handleInputChange('paymentInfo.dueDate', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">Dia 5</SelectItem>
+                        <SelectItem value="10">Dia 10</SelectItem>
+                        <SelectItem value="15">Dia 15</SelectItem>
+                        <SelectItem value="20">Dia 20</SelectItem>
+                        <SelectItem value="25">Dia 25</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+                  <h3 className="text-lg font-semibold">Resumo da Matrícula</h3>
+                  
+                  {selectedSport && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Modalidade:</span>
+                        <span className="font-medium">{selectedSport.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Mensalidade:</span>
+                        <span className="font-medium">R$ {selectedSport.monthlyFee.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Taxa de Matrícula:</span>
+                        <span className="font-medium">R$ {formData.paymentInfo.enrollmentFee.toFixed(2)}</span>
+                      </div>
+                      <div className="border-t pt-2 flex justify-between">
+                        <span className="font-semibold">Total Inicial:</span>
+                        <span className="font-bold text-primary">
+                          R$ {(selectedSport.monthlyFee + formData.paymentInfo.enrollmentFee).toFixed(2)}
+                        </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  )}
+                </div>
               </div>
             </TabsContent>
-
-            {/* Botões de Navegação */}
-            <div className="flex justify-between mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                disabled={currentTab === 'personal'}
-              >
-                Voltar
-              </Button>
-
-              {currentTab !== 'payment' ? (
-                <Button
-                  type="button"
-                  onClick={handleNext}
-                  className="flex items-center gap-2"
-                >
-                  Próximo
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      Finalizar Matrícula
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
           </Tabs>
+
+          {/* Navegação */}
+          <div className="flex justify-between mt-6 pt-6 border-t">
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={currentTab === 'personal'}
+            >
+              Voltar
+            </Button>
+            
+            {currentTab === 'payment' ? (
+              <Button onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? 'Processando...' : 'Confirmar Matrícula'}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <Button onClick={handleNext}>
+                Próximo
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

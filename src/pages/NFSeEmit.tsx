@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { mockPayments } from '@/data/mockPayments';
-import { mockStudents } from '@/data/mockStudents';
+import { usePayments } from '@/hooks/usePayments';
+import { useStudents } from '@/hooks/useStudents';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Alíquotas padrão de Barueri
 const ALIQUOTAS = [
@@ -32,9 +33,10 @@ const NFSeEmit: React.FC = () => {
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId');
 
+  const { data: payments, isLoading: paymentsLoading } = usePayments();
+  const { data: students, isLoading: studentsLoading } = useStudents();
+
   // Estados do formulário
-  const [payment, setPayment] = useState<any>(null);
-  const [student, setStudent] = useState<any>(null);
   const [isEstrangeiro, setIsEstrangeiro] = useState(false);
 
   // Dados do tomador (responsável)
@@ -75,48 +77,49 @@ const NFSeEmit: React.FC = () => {
     formaPagamento: 'pix'
   });
 
+  // Encontrar payment e student
+  const payment = useMemo(() => {
+    if (!payments || !paymentId) return null;
+    return payments.find(p => p.id === paymentId);
+  }, [payments, paymentId]);
+
+  const student = useMemo(() => {
+    if (!students || !payment) return null;
+    return students.find(s => s.id === payment.student_id);
+  }, [students, payment]);
+
   // Carregar dados do pagamento
   useEffect(() => {
-    if (paymentId) {
-      const foundPayment = mockPayments.find(p => p.id === paymentId);
-      if (foundPayment) {
-        setPayment(foundPayment);
+    if (payment && student) {
+      // Preencher dados do tomador (responsável)
+      setTomadorData({
+        cpf: student.guardian?.cpf || '',
+        nome: student.guardian?.name || '',
+        cep: student.address?.zipCode || '',
+        uf: student.address?.state || '',
+        cidade: student.address?.city || '',
+        logradouro: student.address?.street || '',
+        numero: student.address?.number || '',
+        complemento: student.address?.complement || '',
+        bairro: student.address?.neighborhood || '',
+        email: student.guardian?.email || ''
+      });
 
-        const foundStudent = mockStudents.find(s => s.name === foundPayment.studentName);
-        if (foundStudent) {
-          setStudent(foundStudent);
+      // Preencher dados do serviço
+      setServicoData(prev => ({
+        ...prev,
+        valorUnitario: payment.amount.toString(),
+        discriminacao: `Mensalidade de treino de futebol - ${payment.sport} - ${payment.month}`
+      }));
 
-          // Preencher dados do tomador (responsável)
-          setTomadorData({
-            cpf: foundStudent.guardian.cpf,
-            nome: foundStudent.guardian.name,
-            cep: foundStudent.address.zipCode,
-            uf: foundStudent.address.state,
-            cidade: foundStudent.address.city,
-            logradouro: foundStudent.address.street,
-            numero: foundStudent.address.number,
-            complemento: foundStudent.address.complement || '',
-            bairro: foundStudent.address.neighborhood,
-            email: foundStudent.guardian.email
-          });
-
-          // Preencher dados do serviço
-          setServicoData(prev => ({
-            ...prev,
-            valorUnitario: foundPayment.amount.toString(),
-            discriminacao: `Mensalidade de treino de futebol - ${foundPayment.sport} - ${foundPayment.month}`
-          }));
-
-          // Preencher dados da fatura
-          setFatura(prev => ({
-            ...prev,
-            numero: foundPayment.id.replace('pay-', 'FAT-'),
-            valor: foundPayment.amount.toString()
-          }));
-        }
-      }
+      // Preencher dados da fatura
+      setFatura(prev => ({
+        ...prev,
+        numero: payment.id.replace('pay-', 'FAT-'),
+        valor: payment.amount.toString()
+      }));
     }
-  }, [paymentId]);
+  }, [payment, student]);
 
   // Calcular valores
   const valorTotal = useMemo(() => {
@@ -150,11 +153,26 @@ const NFSeEmit: React.FC = () => {
     navigate('/nfs-e');
   };
 
+  if (paymentsLoading || studentsLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    );
+  }
+
   if (!payment) {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center">
-          <p>Carregando dados do pagamento...</p>
+          <p>Pagamento não encontrado.</p>
+          <Button variant="outline" onClick={() => navigate('/nfs-e')} className="mt-4">
+            Voltar
+          </Button>
         </div>
       </div>
     );
@@ -486,59 +504,45 @@ const NFSeEmit: React.FC = () => {
           </Card>
         </div>
 
-        {/* Resumo e Total */}
+        {/* Resumo */}
         <div className="space-y-6">
-          <Card>
+          <Card className="sticky top-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="w-5 h-5" />
-                Resumo da Nota
+                Resumo da NFS-e
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span>Valor Base:</span>
-                <span>R$ {valorTotal.valorBase.toFixed(2)}</span>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Valor Base:</span>
+                  <span className="font-medium">R$ {valorTotal.valorBase.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">ISS ({servicoData.aliquota}%):</span>
+                  <span className="font-medium">R$ {valorTotal.iss.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Valor não incluso:</span>
+                  <span className="font-medium">R$ {valorTotal.valorNaoIncluso.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Retenções:</span>
+                  <span className="font-medium text-destructive">- R$ {valorTotal.totalRetencoes.toFixed(2)}</span>
+                </div>
+                <div className="border-t pt-2 flex justify-between">
+                  <span className="font-semibold">Total NFS-e:</span>
+                  <span className="font-bold text-primary text-lg">R$ {valorTotal.total.toFixed(2)}</span>
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>ISS ({servicoData.aliquota}%):</span>
-                <span>R$ {valorTotal.iss.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Valor Não Incluso:</span>
-                <span>R$ {valorTotal.valorNaoIncluso.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Total Retenções:</span>
-                <span>R$ {valorTotal.totalRetencoes.toFixed(2)}</span>
-              </div>
-              <hr />
-              <div className="flex justify-between font-bold text-lg">
-                <span>TOTAL DA NOTA:</span>
-                <span className="text-primary">R$ {valorTotal.total.toFixed(2)}</span>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Ações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <Button
-                  onClick={handleEmitir}
-                  className="w-full"
-                  size="lg"
-                >
+              <div className="pt-4 space-y-2">
+                <Button onClick={handleEmitir} className="w-full">
                   <FileText className="w-4 h-4 mr-2" />
                   Emitir NFS-e
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/nfs-e')}
-                  className="w-full"
-                >
+                <Button variant="outline" onClick={() => navigate('/nfs-e')} className="w-full">
                   Cancelar
                 </Button>
               </div>
