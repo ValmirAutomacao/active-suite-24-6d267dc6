@@ -1,19 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, FileText, Send, Check, Filter, Receipt } from 'lucide-react';
+import { DollarSign, FileText, Send, Check, Filter, Receipt, Loader2, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { mockPayments } from '@/data/mockPayments';
-import { Payment } from '@/types';
+import { usePayments, useMarkPaymentAsPaid, useGenerateMonthlyPayments } from '@/hooks/usePayments';
 import StatusBadge from '@/components/shared/StatusBadge';
 import Button from '@/components/shared/Button';
+import { toast } from 'sonner';
 
 const Financial: React.FC = () => {
   const navigate = useNavigate();
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
   const [filter, setFilter] = useState<'all' | 'paid' | 'pending' | 'overdue'>('all');
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
 
+  const { data: allPayments = [], isLoading, isError } = usePayments();
+  const markAsPaid = useMarkPaymentAsPaid();
+  const generatePayments = useGenerateMonthlyPayments();
+
   // Filter payments for current month
-  const currentMonthPayments = mockPayments.filter(p => p.month === '2024-08');
-  
+  const currentMonthPayments = useMemo(() => {
+    return allPayments.filter(p => p.month === currentMonth);
+  }, [allPayments, currentMonth]);
+
   const filteredPayments = useMemo(() => {
     return currentMonthPayments.filter(payment => {
       if (filter === 'all') return true;
@@ -30,19 +37,19 @@ const Financial: React.FC = () => {
     return {
       paid: {
         count: paid.length,
-        total: paid.reduce((sum, p) => sum + p.amount, 0)
+        total: paid.reduce((sum, p) => sum + Number(p.amount), 0)
       },
       pending: {
         count: pending.length,
-        total: pending.reduce((sum, p) => sum + p.amount, 0)
+        total: pending.reduce((sum, p) => sum + Number(p.amount), 0)
       },
       overdue: {
         count: overdue.length,
-        total: overdue.reduce((sum, p) => sum + p.amount, 0)
+        total: overdue.reduce((sum, p) => sum + Number(p.amount), 0)
       },
       total: {
         count: currentMonthPayments.length,
-        total: currentMonthPayments.reduce((sum, p) => sum + p.amount, 0)
+        total: currentMonthPayments.reduce((sum, p) => sum + Number(p.amount), 0)
       }
     };
   }, [currentMonthPayments]);
@@ -63,9 +70,48 @@ const Financial: React.FC = () => {
     );
   };
 
+  const handleMarkAsPaid = async (paymentId: string) => {
+    try {
+      await markAsPaid.mutateAsync(paymentId);
+      toast.success('Pagamento marcado como pago!');
+    } catch (error: any) {
+      toast.error(`Erro: ${error.message}`);
+    }
+  };
+
+  const handleGeneratePayments = async () => {
+    try {
+      await generatePayments.mutateAsync(currentMonth);
+      toast.success('Pagamentos gerados com sucesso!');
+    } catch (error: any) {
+      toast.error(`Erro ao gerar pagamentos: ${error.message}`);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
+
+  const getMonthDisplay = () => {
+    const date = new Date(currentMonth + '-01');
+    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-destructive">Erro ao carregar pagamentos</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6">
@@ -73,9 +119,13 @@ const Financial: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Gestão Financeira</h1>
-          <p className="text-muted-foreground">Controle de pagamentos e receitas - Agosto 2024</p>
+          <p className="text-muted-foreground">Controle de pagamentos e receitas - {getMonthDisplay()}</p>
         </div>
         <div className="flex gap-3">
+          <Button variant="outline" onClick={handleGeneratePayments} disabled={generatePayments.isPending}>
+            {generatePayments.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Gerar Pagamentos
+          </Button>
           <Button variant="outline">
             <FileText className="w-4 h-4" />
             Exportar Relatório
@@ -169,91 +219,101 @@ const Financial: React.FC = () => {
 
       {/* Payments Table */}
       <div className="bg-card border border-border rounded-lg overflow-hidden shadow-academy">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted">
-              <tr>
-                <th className="p-4 text-left">
-                  <input 
-                    type="checkbox" 
-                    className="rounded bg-input border-border"
-                    checked={selectedPayments.length === filteredPayments.length && filteredPayments.length > 0}
-                    onChange={handleSelectAll}
-                  />
-                </th>
-                <th className="p-4 text-left text-foreground font-semibold">Aluno</th>
-                <th className="p-4 text-left text-foreground font-semibold">Modalidade</th>
-                <th className="p-4 text-left text-foreground font-semibold">Valor</th>
-                <th className="p-4 text-left text-foreground font-semibold">Vencimento</th>
-                <th className="p-4 text-left text-foreground font-semibold">Status</th>
-                <th className="p-4 text-left text-foreground font-semibold">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPayments.map(payment => (
-                <tr key={payment.id} className="border-t border-border hover:bg-muted/50 transition-colors">
-                  <td className="p-4">
+        {filteredPayments.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            {currentMonthPayments.length === 0 
+              ? 'Nenhum pagamento para este mês. Clique em "Gerar Pagamentos" para criar.'
+              : 'Nenhum pagamento encontrado com o filtro selecionado.'
+            }
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="p-4 text-left">
                     <input 
                       type="checkbox" 
                       className="rounded bg-input border-border"
-                      checked={selectedPayments.includes(payment.id)}
-                      onChange={() => handleSelectPayment(payment.id)}
+                      checked={selectedPayments.length === filteredPayments.length && filteredPayments.length > 0}
+                      onChange={handleSelectAll}
                     />
-                  </td>
-                  <td className="p-4">
-                    <div className="font-medium text-foreground">
-                      {payment.studentName}
-                    </div>
-                  </td>
-                  <td className="p-4 text-muted-foreground">
-                    {payment.sport}
-                  </td>
-                  <td className="p-4">
-                    <span className="font-mono text-foreground font-semibold">
-                      R$ {(payment.amount || 0).toFixed(2)}
-                    </span>
-                  </td>
-                  <td className="p-4 text-muted-foreground">
-                    {formatDate(payment.dueDate)}
-                  </td>
-                  <td className="p-4">
-                    <StatusBadge status={payment.status} />
-                  </td>
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                      {payment.status !== 'paid' && (
-                        <Button
-                          size="sm"
-                          variant="success"
-                          onClick={() => console.log('Mark as paid:', payment.id)}
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {payment.status === 'paid' && (
+                  </th>
+                  <th className="p-4 text-left text-foreground font-semibold">Aluno</th>
+                  <th className="p-4 text-left text-foreground font-semibold">Modalidade</th>
+                  <th className="p-4 text-left text-foreground font-semibold">Valor</th>
+                  <th className="p-4 text-left text-foreground font-semibold">Vencimento</th>
+                  <th className="p-4 text-left text-foreground font-semibold">Status</th>
+                  <th className="p-4 text-left text-foreground font-semibold">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPayments.map(payment => (
+                  <tr key={payment.id} className="border-t border-border hover:bg-muted/50 transition-colors">
+                    <td className="p-4">
+                      <input 
+                        type="checkbox" 
+                        className="rounded bg-input border-border"
+                        checked={selectedPayments.includes(payment.id)}
+                        onChange={() => handleSelectPayment(payment.id)}
+                      />
+                    </td>
+                    <td className="p-4">
+                      <div className="font-medium text-foreground">
+                        {payment.student_name}
+                      </div>
+                    </td>
+                    <td className="p-4 text-muted-foreground">
+                      {payment.sport}
+                    </td>
+                    <td className="p-4">
+                      <span className="font-mono text-foreground font-semibold">
+                        R$ {Number(payment.amount).toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="p-4 text-muted-foreground">
+                      {formatDate(payment.due_date)}
+                    </td>
+                    <td className="p-4">
+                      <StatusBadge status={payment.status as any} />
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-2">
+                        {payment.status !== 'paid' && (
+                          <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => handleMarkAsPaid(payment.id)}
+                            disabled={markAsPaid.isPending}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {payment.status === 'paid' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/nfs-e/emit?paymentId=${payment.id}`)}
+                            title="Emitir NFS-e"
+                          >
+                            <Receipt className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/nfs-e/emit?paymentId=${payment.id}`)}
-                          title="Emitir NFS-e"
+                          onClick={() => toast.info('Função de cobrança em desenvolvimento')}
                         >
-                          <Receipt className="w-4 h-4" />
+                          <Send className="w-4 h-4" />
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => console.log('Send reminder:', payment.id)}
-                      >
-                        <Send className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
