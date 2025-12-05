@@ -197,8 +197,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { error: insertError };
         }
         
-        // Atualiza o estado do usuário com os novos dados
-        setUser({ ...user, ...profileData });
+        // Atualiza o estado do profile
+        setProfile({ ...profile, ...profileData });
         return { error: null };
       }
       
@@ -206,8 +206,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error };
     }
     
-    // Atualiza o estado do usuário com os novos dados
-    setUser(data as User);
+    // Atualiza o estado do profile com os novos dados
+    setProfile(data);
     
     return { error: null };
   };

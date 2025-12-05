@@ -1,17 +1,19 @@
 import React from 'react';
 
 interface StatusBadgeProps {
-  status: 'paid' | 'pending' | 'overdue' | 'active' | 'inactive';
+  status: 'paid' | 'pending' | 'overdue' | 'active' | 'inactive' | 'provisional' | 'effective' | string;
   size?: 'sm' | 'md' | 'lg';
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
-  const configs = {
+  const configs: Record<string, { label: string; bgColor: string; textColor: string }> = {
     paid: { label: 'Pago', bgColor: 'bg-success', textColor: 'text-success-foreground' },
     pending: { label: 'Pendente', bgColor: 'bg-warning', textColor: 'text-warning-foreground' },
     overdue: { label: 'Atrasado', bgColor: 'bg-destructive', textColor: 'text-destructive-foreground' },
     active: { label: 'Ativo', bgColor: 'bg-success', textColor: 'text-success-foreground' },
-    inactive: { label: 'Inativo', bgColor: 'bg-muted', textColor: 'text-muted-foreground' }
+    inactive: { label: 'Inativo', bgColor: 'bg-muted', textColor: 'text-muted-foreground' },
+    provisional: { label: 'Provisório', bgColor: 'bg-info', textColor: 'text-info-foreground' },
+    effective: { label: 'Efetivo', bgColor: 'bg-primary', textColor: 'text-primary-foreground' }
   };
 
   const sizeClasses = {

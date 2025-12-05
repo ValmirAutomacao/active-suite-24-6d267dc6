@@ -21,8 +21,8 @@ export const useCreateTeacher = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (teacherData: Omit<Teacher, 'id' | 'createdAt' | 'updated_at'>) => 
-      teacherService.create(teacherData),
+    mutationFn: (teacherData: Omit<Teacher, 'id' | 'createdAt' | 'updated_at' | 'modalitiesIds'>) => 
+      teacherService.create(teacherData as any),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
     },

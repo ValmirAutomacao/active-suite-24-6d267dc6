@@ -28,7 +28,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   onError={(e) => {
                     // Fallback para o ícone padrão se a imagem não carregar
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                    const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (nextSibling) nextSibling.style.display = 'flex';
                   }}
                 />
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center" style={{display: 'none'}}>

@@ -84,6 +84,9 @@ export interface Event {
   instructor_id?: string;
   frequency?: 'daily' | 'weekly' | 'monthly';
   daysOfWeek?: string[]; // Para eventos semanais
+  max_participants?: number;
+  current_participants?: number;
+  is_inaugural?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -122,6 +125,7 @@ export interface Sport {
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
+  instructor?: string;
   schedule: Array<{
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
     startTime: string;

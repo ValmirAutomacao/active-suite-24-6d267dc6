@@ -201,13 +201,13 @@ const EnrollmentDashboard: React.FC = () => {
                     <div className="flex-1">
                       <p className="font-medium">{event.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(event.date).toLocaleDateString('pt-BR')} às {event.startTime}
+                        {new Date(event.date).toLocaleDateString('pt-BR')} às {event.start_time}
                       </p>
                     </div>
                     <Badge variant="outline">
-                      {event.type === 'training' ? 'Treino' :
-                       event.type === 'match' ? 'Jogo' :
-                       event.type === 'evaluation' ? 'Avaliação' : 'Evento'}
+                      {event.event_type === 'training' ? 'Treino' :
+                       event.event_type === 'match' ? 'Jogo' :
+                       event.event_type === 'evaluation' ? 'Avaliação' : 'Evento'}
                     </Badge>
                   </div>
                 ))

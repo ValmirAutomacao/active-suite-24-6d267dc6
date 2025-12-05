@@ -22,7 +22,7 @@ export const useCreateStudent = () => {
   
   return useMutation({
     mutationFn: (studentData: Omit<Student, 'id' | 'created_at' | 'updated_at'>) => 
-      studentService.create(studentData),
+      studentService.create(studentData as any),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },

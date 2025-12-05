@@ -311,8 +311,8 @@ const EnrollmentForm: React.FC = () => {
 
                 <div className="space-y-4">
                   <PhotoUpload
-                    onPhotoChange={(photo) => handleInputChange('photo', photo)}
-                    currentPhoto={formData.photo}
+                    onChange={(photo) => handleInputChange('photo', photo)}
+                    value={formData.photo}
                   />
                 </div>
               </div>

@@ -12,6 +12,8 @@ export const mockSports: Sport[] = [
     currentStudents: 8,
     status: 'active',
     instructor: 'Professora Ana',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     schedule: [
       { day: 'tuesday', startTime: '08:00', endTime: '09:00' },
       { day: 'thursday', startTime: '08:00', endTime: '09:00' }
@@ -28,6 +30,8 @@ export const mockSports: Sport[] = [
     currentStudents: 12,
     status: 'active',
     instructor: 'Professor Carlos',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     schedule: [
       { day: 'tuesday', startTime: '14:00', endTime: '15:30' },
       { day: 'thursday', startTime: '14:00', endTime: '15:30' }
@@ -44,6 +48,8 @@ export const mockSports: Sport[] = [
     currentStudents: 15,
     status: 'active',
     instructor: 'Professor Carlos',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     schedule: [
       { day: 'monday', startTime: '15:00', endTime: '16:30' },
       { day: 'wednesday', startTime: '15:00', endTime: '16:30' }
@@ -60,6 +66,8 @@ export const mockSports: Sport[] = [
     currentStudents: 16,
     status: 'active',
     instructor: 'Professor Beto',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     schedule: [
       { day: 'monday', startTime: '17:00', endTime: '18:30' },
       { day: 'wednesday', startTime: '17:00', endTime: '18:30' },
@@ -77,6 +85,8 @@ export const mockSports: Sport[] = [
     currentStudents: 18,
     status: 'active',
     instructor: 'Professor Beto',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     schedule: [
       { day: 'tuesday', startTime: '18:30', endTime: '20:00' },
       { day: 'thursday', startTime: '18:30', endTime: '20:00' },
@@ -94,6 +104,8 @@ export const mockSports: Sport[] = [
     currentStudents: 0,
     status: 'active',
     instructor: 'Todos os professores',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     schedule: [
       { day: 'saturday', startTime: '10:00', endTime: '11:00' }
     ]

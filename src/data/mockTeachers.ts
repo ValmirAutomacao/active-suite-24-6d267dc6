@@ -17,7 +17,9 @@ export const mockTeachers: Teacher[] = [
     modalitiesIds: ['1', '2', '3'],
     status: 'active',
     hireDate: '2022-01-15',
-    salary: 4500.00
+    salary: 4500.00,
+    createdAt: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: '2',
@@ -35,7 +37,9 @@ export const mockTeachers: Teacher[] = [
     modalitiesIds: ['1', '4', '5'],
     status: 'active',
     hireDate: '2022-03-10',
-    salary: 4200.00
+    salary: 4200.00,
+    createdAt: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: '3',
@@ -53,6 +57,8 @@ export const mockTeachers: Teacher[] = [
     modalitiesIds: ['2', '3', '4', '5'],
     status: 'active',
     hireDate: '2021-08-20',
-    salary: 5000.00
+    salary: 5000.00,
+    createdAt: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ];

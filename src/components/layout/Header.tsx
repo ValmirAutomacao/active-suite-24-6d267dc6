@@ -26,7 +26,8 @@ const Header: React.FC = () => {
               onError={(e) => {
                 // Fallback para o ícone padrão se a imagem não carregar
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling.style.display = 'flex';
+                const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
+                if (nextSibling) nextSibling.style.display = 'flex';
               }}
             />
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-academy-glow" style={{display: 'none'}}>

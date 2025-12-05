@@ -22,7 +22,7 @@ export const useCreateSport = () => {
   
   return useMutation({
     mutationFn: (sportData: Omit<Sport, 'id' | 'currentStudents' | 'created_at' | 'updated_at'>) => 
-      sportService.create(sportData),
+      sportService.create(sportData as any),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sports'] });
     },
