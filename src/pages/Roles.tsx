@@ -6,9 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Shield } from 'lucide-react';
-import { mockRoles } from '@/data/mockRoles';
-import { Role } from '@/types';
+import { Plus, Pencil, Trash2, Shield, Loader2 } from 'lucide-react';
+import { useRoles, useCreateRole, useUpdateRole, useDeleteRole } from '@/hooks/useRoles';
 import { toast } from 'sonner';
 
 const availablePermissions = [
@@ -26,9 +25,13 @@ const availablePermissions = [
 ];
 
 const Roles: React.FC = () => {
-  const [roles, setRoles] = useState(mockRoles);
+  const { data: roles = [], isLoading, isError } = useRoles();
+  const createRole = useCreateRole();
+  const updateRole = useUpdateRole();
+  const deleteRole = useDeleteRole();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [editingRole, setEditingRole] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -49,25 +52,32 @@ const Roles: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const roleData: Role = {
-      id: editingRole?.id || Date.now().toString(),
-      name: formData.name,
-      description: formData.description,
-      permissions: formData.permissions
-    };
-
-    if (editingRole) {
-      setRoles(prev => prev.map(r => r.id === editingRole.id ? roleData : r));
-      toast.success('Função atualizada com sucesso!');
-    } else {
-      setRoles(prev => [...prev, roleData]);
-      toast.success('Função cadastrada com sucesso!');
+    try {
+      if (editingRole) {
+        await updateRole.mutateAsync({
+          id: editingRole.id,
+          data: {
+            name: formData.name,
+            description: formData.description,
+            permissions: formData.permissions
+          }
+        });
+        toast.success('Função atualizada com sucesso!');
+      } else {
+        await createRole.mutateAsync({
+          name: formData.name,
+          description: formData.description,
+          permissions: formData.permissions
+        });
+        toast.success('Função cadastrada com sucesso!');
+      }
+      resetForm();
+    } catch (error: any) {
+      toast.error(`Erro: ${error.message}`);
     }
-
-    resetForm();
   };
 
   const resetForm = () => {
@@ -80,25 +90,45 @@ const Roles: React.FC = () => {
     setIsDialogOpen(false);
   };
 
-  const handleEdit = (role: Role) => {
+  const handleEdit = (role: any) => {
     setEditingRole(role);
     setFormData({
       name: role.name,
-      description: role.description,
-      permissions: role.permissions
+      description: role.description || '',
+      permissions: role.permissions || []
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setRoles(prev => prev.filter(r => r.id !== id));
-    toast.success('Função removida com sucesso!');
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteRole.mutateAsync(id);
+      toast.success('Função removida com sucesso!');
+    } catch (error: any) {
+      toast.error(`Erro ao remover: ${error.message}`);
+    }
   };
 
   const getPermissionName = (permissionId: string) => {
     const permission = availablePermissions.find(p => p.id === permissionId);
     return permission?.name || permissionId;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-destructive">Erro ao carregar funções</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -174,7 +204,10 @@ const Roles: React.FC = () => {
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancelar
                 </Button>
-                <Button type="submit">
+                <Button type="submit" disabled={createRole.isPending || updateRole.isPending}>
+                  {(createRole.isPending || updateRole.isPending) && (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  )}
                   {editingRole ? 'Atualizar' : 'Cadastrar'}
                 </Button>
               </DialogFooter>
@@ -194,52 +227,63 @@ const Roles: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Função</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Permissões</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {roles.map(role => (
-                <TableRow key={role.id}>
-                  <TableCell>
-                    <p className="font-medium">{role.name}</p>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-sm text-muted-foreground">{role.description}</p>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {role.permissions.slice(0, 3).map(permissionId => (
-                        <Badge key={permissionId} variant="secondary" className="text-xs">
-                          {getPermissionName(permissionId)}
-                        </Badge>
-                      ))}
-                      {role.permissions.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{role.permissions.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(role)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(role.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {roles.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              Nenhuma função cadastrada
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Função</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Permissões</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {roles.map(role => (
+                  <TableRow key={role.id}>
+                    <TableCell>
+                      <p className="font-medium">{role.name}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-muted-foreground">{role.description}</p>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {(role.permissions || []).slice(0, 3).map(permissionId => (
+                          <Badge key={permissionId} variant="secondary" className="text-xs">
+                            {getPermissionName(permissionId)}
+                          </Badge>
+                        ))}
+                        {(role.permissions || []).length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{(role.permissions || []).length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(role)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleDelete(role.id)}
+                          disabled={deleteRole.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

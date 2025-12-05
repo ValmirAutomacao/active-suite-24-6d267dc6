@@ -7,21 +7,24 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Users } from 'lucide-react';
-import { mockEmployees } from '@/data/mockEmployees';
-import { mockRoles } from '@/data/mockRoles';
-import { Employee } from '@/types';
+import { Plus, Pencil, Trash2, Users, Loader2 } from 'lucide-react';
+import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '@/hooks/useEmployees';
+import { useRoles } from '@/hooks/useRoles';
 import { toast } from 'sonner';
 
 const Employees: React.FC = () => {
-  const [employees, setEmployees] = useState(mockEmployees);
+  const { data: employees = [], isLoading, isError } = useEmployees();
+  const { data: roles = [] } = useRoles();
+  const createEmployee = useCreateEmployee();
+  const updateEmployee = useUpdateEmployee();
+  const deleteEmployee = useDeleteEmployee();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
   const [formData, setFormData] = useState({
-    fullName: '',
-    roleId: '',
-    login: '',
-    password: ''
+    full_name: '',
+    email: '',
+    role_id: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,60 +32,84 @@ const Employees: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const employeeData: Employee = {
-      id: editingEmployee?.id || Date.now().toString(),
-      fullName: formData.fullName,
-      roleId: formData.roleId,
-      login: formData.login,
-      password: formData.password,
-      status: 'active',
-      createdAt: editingEmployee?.createdAt || new Date().toISOString().split('T')[0]
-    };
-
-    if (editingEmployee) {
-      setEmployees(prev => prev.map(e => e.id === editingEmployee.id ? employeeData : e));
-      toast.success('Funcionário atualizado com sucesso!');
-    } else {
-      setEmployees(prev => [...prev, employeeData]);
-      toast.success('Funcionário cadastrado com sucesso!');
+    try {
+      if (editingEmployee) {
+        await updateEmployee.mutateAsync({
+          id: editingEmployee.id,
+          data: {
+            full_name: formData.full_name,
+            email: formData.email,
+            role_id: formData.role_id || null
+          }
+        });
+        toast.success('Funcionário atualizado com sucesso!');
+      } else {
+        await createEmployee.mutateAsync({
+          full_name: formData.full_name,
+          email: formData.email,
+          role_id: formData.role_id || null,
+          status: 'active'
+        });
+        toast.success('Funcionário cadastrado com sucesso!');
+      }
+      resetForm();
+    } catch (error: any) {
+      toast.error(`Erro: ${error.message}`);
     }
-
-    resetForm();
   };
 
   const resetForm = () => {
     setFormData({
-      fullName: '',
-      roleId: '',
-      login: '',
-      password: ''
+      full_name: '',
+      email: '',
+      role_id: ''
     });
     setEditingEmployee(null);
     setIsDialogOpen(false);
   };
 
-  const handleEdit = (employee: Employee) => {
+  const handleEdit = (employee: any) => {
     setEditingEmployee(employee);
     setFormData({
-      fullName: employee.fullName,
-      roleId: employee.roleId,
-      login: employee.login,
-      password: employee.password
+      full_name: employee.full_name,
+      email: employee.email,
+      role_id: employee.role_id || ''
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setEmployees(prev => prev.filter(e => e.id !== id));
-    toast.success('Funcionário removido com sucesso!');
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteEmployee.mutateAsync(id);
+      toast.success('Funcionário removido com sucesso!');
+    } catch (error: any) {
+      toast.error(`Erro ao remover: ${error.message}`);
+    }
   };
 
-  const getRoleName = (roleId: string) => {
-    return mockRoles.find(role => role.id === roleId)?.name || 'Função não encontrada';
+  const getRoleName = (roleId: string | null) => {
+    if (!roleId) return 'Sem função';
+    return roles.find(role => role.id === roleId)?.name || 'Função não encontrada';
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-destructive">Erro ao carregar funcionários</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -108,23 +135,34 @@ const Employees: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Nome Completo</Label>
+                  <Label htmlFor="full_name">Nome Completo</Label>
                   <Input
-                    id="fullName"
-                    name="fullName"
-                    value={formData.fullName}
+                    id="full_name"
+                    name="full_name"
+                    value={formData.full_name}
                     onChange={handleInputChange}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="roleId">Função</Label>
-                  <Select value={formData.roleId} onValueChange={(value) => setFormData(prev => ({ ...prev, roleId: value }))}>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="role_id">Função</Label>
+                  <Select value={formData.role_id} onValueChange={(value) => setFormData(prev => ({ ...prev, role_id: value }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma função" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockRoles.map(role => (
+                      {roles.map(role => (
                         <SelectItem key={role.id} value={role.id}>
                           {role.name}
                         </SelectItem>
@@ -132,34 +170,16 @@ const Employees: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login">Login</Label>
-                  <Input
-                    id="login"
-                    name="login"
-                    value={formData.login}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
               </div>
               
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancelar
                 </Button>
-                <Button type="submit">
+                <Button type="submit" disabled={createEmployee.isPending || updateEmployee.isPending}>
+                  {(createEmployee.isPending || updateEmployee.isPending) && (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  )}
                   {editingEmployee ? 'Atualizar' : 'Cadastrar'}
                 </Button>
               </DialogFooter>
@@ -179,53 +199,64 @@ const Employees: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Login</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Data de Cadastro</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map(employee => (
-                <TableRow key={employee.id}>
-                  <TableCell>
-                    <p className="font-medium">{employee.fullName}</p>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-sm">{employee.login}</p>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {getRoleName(employee.roleId)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
-                      {employee.status === 'active' ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(employee.createdAt).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(employee)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(employee.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {employees.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              Nenhum funcionário cadastrado
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Função</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Data de Cadastro</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {employees.map(employee => (
+                  <TableRow key={employee.id}>
+                    <TableCell>
+                      <p className="font-medium">{employee.full_name}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm">{employee.email}</p>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {getRoleName(employee.role_id)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
+                        {employee.status === 'active' ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {employee.created_at ? new Date(employee.created_at).toLocaleDateString('pt-BR') : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(employee)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleDelete(employee.id)}
+                          disabled={deleteEmployee.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
