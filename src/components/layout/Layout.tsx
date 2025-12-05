@@ -1,51 +1,82 @@
 import React from 'react';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { 
+  SidebarProvider, 
+  SidebarTrigger,
+  SidebarInset 
+} from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import EditModeToggle from '../shared/EditModeToggle';
-import { Trophy } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Separator } from '@/components/ui/separator';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { useLocation, Link } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
+const routeNames: Record<string, string> = {
+  '/': 'Home',
+  '/financial': 'Financeiro',
+  '/marketing': 'Marketing',
+  '/nfs-e': 'Notas Fiscais',
+  '/nfs-e/emit': 'Emitir NFS-e',
+  '/roles': 'Funções',
+  '/employees': 'Funcionários',
+  '/teachers': 'Professores',
+  '/enrollment': 'Matrícula',
+  '/students': 'Alunos',
+  '/students/new': 'Novo Aluno',
+  '/calendar': 'Agenda',
+  '/reports': 'Relatórios',
+  '/modalities': 'Modalidades',
+  '/events/new': 'Novo Evento',
+  '/inaugural-class': 'Aula Inaugural',
+};
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const pageName = routeNames[currentPath] || 'Página';
+
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="h-16 flex items-center justify-between border-b border-border px-6">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger />
-              <Link to="/" className="flex items-center gap-3">
-                <img
-                  src="/assets/logo.png"
-                  alt="Logo da Academia"
-                  className="h-12 w-auto object-contain"
-                  onError={(e) => {
-                    // Fallback para o ícone padrão se a imagem não carregar
-                    e.currentTarget.style.display = 'none';
-                    const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (nextSibling) nextSibling.style.display = 'flex';
-                  }}
-                />
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center" style={{display: 'none'}}>
-                  <Trophy className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <span className="text-lg font-bold text-foreground">AcademyManager</span>
-              </Link>
-            </div>
-          </header>
-
-          {/* Main Content */}
-          <main className="flex-1 p-6">
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink asChild>
+                    <Link to="/">AcademyManager</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{pageName}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <main className="flex-1 pt-4">
             {children}
           </main>
         </div>
-      </div>
+      </SidebarInset>
       <EditModeToggle />
     </SidebarProvider>
   );
