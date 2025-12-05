@@ -3,9 +3,26 @@ import { Sport } from '@/types';
 
 const TABLE_NAME = 'sports';
 
+// Helper to map DB response to Sport type
+const mapDbToSport = (data: any): Sport => ({
+  id: data.id,
+  name: data.name,
+  description: data.description || '',
+  ageRange: data.ageRange || { min: 0, max: 99 },
+  monthlyFee: data.monthlyFee,
+  weeklyHours: data.weeklyHours,
+  maxStudents: data.maxStudents,
+  currentStudents: data.current_students || 0,
+  status: data.status || 'active',
+  instructor: data.instructor,
+  schedule: data.schedule || [],
+  created_at: data.created_at,
+  updated_at: data.updated_at
+});
+
 export const sportService = {
   // Create sport
-  create: async (sportData: Omit<Sport, 'id' | 'currentStudents' | 'createdAt' | 'updated_at'>): Promise<Sport> => {
+  create: async (sportData: Omit<Sport, 'id' | 'currentStudents' | 'created_at' | 'updated_at'>): Promise<Sport> => {
     const { data, error } = await supabase
       .from(TABLE_NAME)
       .insert([{ 
@@ -18,7 +35,7 @@ export const sportService = {
       .single();
     
     if (error) throw error;
-    return data as Sport;
+    return mapDbToSport(data);
   },
 
   // Get sport by ID
@@ -34,7 +51,7 @@ export const sportService = {
       throw error;
     }
     
-    return data as Sport;
+    return mapDbToSport(data);
   },
 
   // Get all sports
@@ -45,7 +62,7 @@ export const sportService = {
       .order('name', { ascending: true });
     
     if (error) throw error;
-    return data as Sport[];
+    return (data || []).map(mapDbToSport);
   },
 
   // Update sport
@@ -98,7 +115,7 @@ export const sportService = {
       throw new Error(`No sport found with ID: ${id}. Cannot update a non-existent sport.`);
     }
     
-    return data as Sport;
+    return mapDbToSport(data);
   },
 
   // Delete sport

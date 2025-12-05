@@ -31,10 +31,11 @@ const generateEvents = (): Event[] => {
             startTime: schedule.startTime,
             endTime: schedule.endTime,
             type: 'training',
-            sport: sport.name,
-            students: [], // Can be populated with specific student IDs
+            sport_id: sport.id,
+            students: [],
             location: getLocationBySport(sport.id),
-            instructor: sport.instructor
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           });
         }
         currentDate.setDate(currentDate.getDate() + 1);
@@ -51,7 +52,7 @@ const generateEvents = (): Event[] => {
       startTime: '08:00',
       endTime: '17:00',
       type: 'match' as const,
-      sport: 'Futebol',
+      sport_id: '1',
       location: 'Complexo Esportivo Central'
     },
     {
@@ -70,7 +71,7 @@ const generateEvents = (): Event[] => {
       startTime: '19:00',
       endTime: '21:00',
       type: 'meeting' as const,
-      sport: 'Basquete',
+      sport_id: '4',
       location: 'Auditório'
     },
     {
@@ -80,7 +81,7 @@ const generateEvents = (): Event[] => {
       startTime: '09:00',
       endTime: '16:00',
       type: 'special' as const,
-      sport: 'Natação',
+      sport_id: '5',
       location: 'Piscina Olímpica'
     },
     {
@@ -90,7 +91,7 @@ const generateEvents = (): Event[] => {
       startTime: '15:00',
       endTime: '17:00',
       type: 'match' as const,
-      sport: 'Futsal',
+      sport_id: '3',
       location: 'Quadra Principal'
     },
     {
@@ -100,7 +101,7 @@ const generateEvents = (): Event[] => {
       startTime: '14:00',
       endTime: '18:00',
       type: 'special' as const,
-      sport: 'Vôlei',
+      sport_id: '4',
       location: 'Quadra de Vôlei'
     },
     {
@@ -132,9 +133,10 @@ const generateEvents = (): Event[] => {
       startTime: event.startTime,
       endTime: event.endTime,
       type: event.type,
-      sport: event.sport,
+      sport_id: event.sport_id,
       location: event.location,
-      instructor: 'Equipe Técnica'
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     });
   });
   

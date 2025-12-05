@@ -46,7 +46,7 @@ export const useTodayEvents = () => {
 export const useRevenueChart = (months: number = 12) => {
   return useQuery({
     queryKey: ['revenue-chart', months],
-    queryFn: () => reportService.getRevenueChart(months),
+    queryFn: () => reportServiceSafe.getRevenueChart(months),
     staleTime: 60 * 60 * 1000, // 1 hora
   });
 };
@@ -54,7 +54,7 @@ export const useRevenueChart = (months: number = 12) => {
 export const useStudentsByModality = () => {
   return useQuery({
     queryKey: ['students-by-modality'],
-    queryFn: () => reportService.getStudentsByModality(),
+    queryFn: () => reportServiceSafe.getStudentsByModality(),
     staleTime: 15 * 60 * 1000, // 15 minutos
   });
 };

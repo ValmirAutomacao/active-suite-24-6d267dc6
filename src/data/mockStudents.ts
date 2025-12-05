@@ -48,7 +48,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-01-15',
     monthlyFee: 120.00,
     paymentStatus: 'paid',
-    lastPayment: '2024-08-05'
+    lastPayment: '2024-08-05',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-002',
@@ -91,7 +93,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-02-10',
     monthlyFee: 270.00,
     paymentStatus: 'pending',
-    lastPayment: '2024-07-05'
+    lastPayment: '2024-07-05',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-003',
@@ -133,7 +137,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-01-20',
     monthlyFee: 160.00,
     paymentStatus: 'overdue',
-    lastPayment: '2024-06-15'
+    lastPayment: '2024-06-15',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-004',
@@ -176,7 +182,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-03-05',
     monthlyFee: 250.00,
     paymentStatus: 'paid',
-    lastPayment: '2024-08-12'
+    lastPayment: '2024-08-12',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-005',
@@ -218,7 +226,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-01-08',
     monthlyFee: 320.00,
     paymentStatus: 'paid',
-    lastPayment: '2024-08-20'
+    lastPayment: '2024-08-20',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-006',
@@ -260,7 +270,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-02-18',
     monthlyFee: 140.00,
     paymentStatus: 'paid',
-    lastPayment: '2024-08-01'
+    lastPayment: '2024-08-01',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-007',
@@ -302,7 +314,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-01-25',
     monthlyFee: 410.00,
     paymentStatus: 'overdue',
-    lastPayment: '2024-06-10'
+    lastPayment: '2024-06-10',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-008',
@@ -344,7 +358,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-03-12',
     monthlyFee: 130.00,
     paymentStatus: 'pending',
-    lastPayment: '2024-07-15'
+    lastPayment: '2024-07-15',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-009',
@@ -386,7 +402,9 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-02-28',
     monthlyFee: 120.00,
     paymentStatus: 'paid',
-    lastPayment: '2024-08-18'
+    lastPayment: '2024-08-18',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'std-010',
@@ -428,6 +446,8 @@ export const mockStudents: Student[] = [
     enrollmentDate: '2024-01-30',
     monthlyFee: 380.00,
     paymentStatus: 'paid',
-    lastPayment: '2024-08-22'
+    lastPayment: '2024-08-22',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ];

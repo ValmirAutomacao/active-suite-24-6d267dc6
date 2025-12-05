@@ -249,5 +249,51 @@ export const reportServiceSafe = {
       console.error('Erro em getRecentPayments:', error);
       return [];
     }
+  },
+
+  // Gráfico de receita por mês
+  getRevenueChart: async (months: number = 12) => {
+    try {
+      const { data: students } = await supabase
+        .from('students')
+        .select('monthlyFee, status, created_at')
+        .in('status', ['active', 'effective']);
+
+      const totalMonthly = students?.reduce((sum, s) => sum + Number(s.monthlyFee || 0), 0) || 0;
+
+      // Generate mock data for the chart
+      const chartData = [];
+      const now = new Date();
+      for (let i = months - 1; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        chartData.push({
+          month: date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }),
+          revenue: totalMonthly * (0.8 + Math.random() * 0.4) // Simulated variation
+        });
+      }
+
+      return chartData;
+    } catch (error) {
+      console.error('Erro em getRevenueChart:', error);
+      return [];
+    }
+  },
+
+  // Alunos por modalidade
+  getStudentsByModality: async () => {
+    try {
+      const { data: sports } = await supabase
+        .from('sports')
+        .select('id, name, current_students');
+
+      return sports?.map(sport => ({
+        id: sport.id,
+        name: sport.name,
+        count: sport.current_students || 0
+      })) || [];
+    } catch (error) {
+      console.error('Erro em getStudentsByModality:', error);
+      return [];
+    }
   }
 };

@@ -5,10 +5,11 @@ const TABLE_NAME = 'teachers';
 
 export const teacherService = {
   // Create teacher
-  create: async (teacherData: Omit<Teacher, 'id' | 'modalitiesIds'>): Promise<Teacher> => {
+  create: async (teacherData: Omit<Teacher, 'id' | 'createdAt' | 'updated_at'> & { modalitiesIds?: string[] }): Promise<Teacher> => {
+    const { modalitiesIds, ...teacherDataWithoutModalities } = teacherData;
     const { data, error } = await supabase
       .from(TABLE_NAME)
-      .insert([{ ...teacherData, createdAt: new Date().toISOString(), updated_at: new Date().toISOString() }])
+      .insert([{ ...teacherDataWithoutModalities, createdAt: new Date().toISOString(), updated_at: new Date().toISOString() }])
       .select()
       .single();
     
@@ -16,9 +17,9 @@ export const teacherService = {
     const newTeacher = data as Teacher;
     
     // Handle the modalities association after creating the teacher
-    if (teacherData.modalitiesIds && Array.isArray(teacherData.modalitiesIds)) {
+    if (modalitiesIds && Array.isArray(modalitiesIds)) {
       // Create entries in the teacher_sports table
-      const teacherSportsData = teacherData.modalitiesIds.map(modalityId => ({
+      const teacherSportsData = modalitiesIds.map(modalityId => ({
         teacher_id: newTeacher.id,
         sport_id: modalityId
       }));
