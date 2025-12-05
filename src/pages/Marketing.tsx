@@ -118,7 +118,7 @@ const Marketing: React.FC = () => {
 
   // Approval form states
   const [approvalData, setApprovalData] = useState({
-    status: 'pending' as 'approved' | 'rejected',
+    status: 'approved' as 'approved' | 'rejected',
     notes: ''
   });
 
@@ -281,7 +281,7 @@ const Marketing: React.FC = () => {
       });
 
       setIsApprovalDialogOpen(false);
-      setApprovalData({ status: 'pending', notes: '' });
+      setApprovalData({ status: 'approved', notes: '' });
 
     } catch (error) {
       toast({
@@ -677,8 +677,8 @@ const Marketing: React.FC = () => {
                           <Button
                             size="sm"
                             onClick={() => {
-                              setSelectedCampaign(campaign);
-                              setApprovalData({ status: 'pending', notes: '' });
+                              setSelectedCampaign(campaign as Campaign);
+                              setApprovalData({ status: 'approved', notes: '' });
                             }}
                           >
                             Aprovar

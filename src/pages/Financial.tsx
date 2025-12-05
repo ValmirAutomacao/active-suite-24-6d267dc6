@@ -233,7 +233,7 @@ const Financial: React.FC = () => {
                       {payment.status === 'paid' && (
                         <Button
                           size="sm"
-                          variant="default"
+                          variant="outline"
                           onClick={() => navigate(`/nfs-e/emit?paymentId=${payment.id}`)}
                           title="Emitir NFS-e"
                         >

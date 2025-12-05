@@ -57,7 +57,7 @@ const Teachers: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const teacherData: Omit<Teacher, 'id' | 'createdAt' | 'updated_at'> = {
+    const teacherData = {
       fullName: formData.fullName,
       nickname: formData.nickname,
       identity: formData.identity,
@@ -65,16 +65,14 @@ const Teachers: React.FC = () => {
       education: formData.education,
       specialization: formData.specialization,
       age: parseInt(formData.age),
-      gender: formData.gender,
+      gender: formData.gender as 'male' | 'female' | 'other',
       phone: formData.phone,
       email: formData.email,
       address: formData.address,
       modalitiesIds: formData.modalitiesIds,
-      status: 'active',
+      status: 'active' as 'active' | 'inactive',
       hireDate: editingTeacher?.hireDate || new Date().toISOString().split('T')[0],
-      salary: parseFloat(formData.salary),
-      createdAt: editingTeacher?.createdAt || new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      salary: parseFloat(formData.salary)
     };
 
     try {

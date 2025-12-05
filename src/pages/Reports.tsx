@@ -153,26 +153,31 @@ const Reports: React.FC = () => {
               </div>
             ) : modalityData && modalityData.length > 0 ? (
               <div className="space-y-4">
-                {modalityData.map((modality, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{modality.modality}</span>
-                      <span className="text-sm font-bold">R$ {modality.revenue.toFixed(0)}</span>
+                {modalityData.map((modality, index) => {
+                  // Estimate revenue based on count and average fee
+                  const estimatedRevenue = modality.count * 150; // R$150 average
+                  const maxRevenue = Math.max(...modalityData.map(m => m.count * 150));
+                  return (
+                    <div key={index} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{modality.name}</span>
+                        <span className="text-sm font-bold">R$ {estimatedRevenue.toFixed(0)}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{
+                            width: `${(estimatedRevenue / maxRevenue) * 100}%`
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{modality.count} alunos</span>
+                        <span>R$ {modality.count > 0 ? (estimatedRevenue / modality.count).toFixed(0) : 0}/aluno</span>
+                      </div>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full transition-all"
-                        style={{
-                          width: `${(modality.revenue / Math.max(...modalityData.map(m => m.revenue))) * 100}%`
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{modality.count} alunos</span>
-                      <span>R$ {(modality.revenue / modality.count).toFixed(0)}/aluno</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
