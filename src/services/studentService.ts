@@ -256,7 +256,8 @@ export const getProvisionalStudentByGuardianEmail = async (email: string) => {
   // Filtrar manualmente pelo email do guardian
   const foundStudent = allStudents?.find(student => {
     console.log('Verificando aluno:', student.name, 'Guardian:', student.guardian);
-    return student.guardian && student.guardian.email === email;
+    const guardian = student.guardian as { email?: string } | null;
+    return guardian && guardian.email === email;
   });
 
   console.log('Aluno encontrado na busca manual:', foundStudent);

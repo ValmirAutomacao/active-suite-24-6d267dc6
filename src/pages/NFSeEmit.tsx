@@ -212,7 +212,7 @@ const NFSeEmit: React.FC = () => {
                 <Checkbox
                   id="estrangeiro"
                   checked={isEstrangeiro}
-                  onCheckedChange={setIsEstrangeiro}
+                  onCheckedChange={(checked) => setIsEstrangeiro(checked === true)}
                 />
                 <Label htmlFor="estrangeiro">Marque aqui se o tomador for estrangeiro</Label>
               </div>

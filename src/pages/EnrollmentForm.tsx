@@ -619,7 +619,7 @@ const EnrollmentForm: React.FC = () => {
                           <p><strong>Horários:</strong> {selectedSport.schedule?.map(s => `${s.day} ${s.startTime}-${s.endTime}`).join(', ') || 'A definir'}</p>
                         </div>
                         <div>
-                          <p><strong>Local:</strong> {selectedSport.location || 'Academia Principal'}</p>
+                          <p><strong>Local:</strong> Academia Principal</p>
                           <p><strong>Mensalidade:</strong> R$ {selectedSport.monthlyFee?.toFixed(2) || '150,00'}</p>
                         </div>
                       </div>

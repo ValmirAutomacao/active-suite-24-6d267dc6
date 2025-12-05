@@ -117,7 +117,7 @@ const GuardianInauguralDashboard: React.FC = () => {
                 <>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>Data: {new Date(inauguralClass.selectedDate).toLocaleDateString('pt-BR')}</span>
+                    <span>Data: {new Date(inauguralClass.selected_date).toLocaleDateString('pt-BR')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />

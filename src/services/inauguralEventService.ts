@@ -70,7 +70,8 @@ export const registerStudentInInauguralEvent = async (
 
     if (error) throw error;
 
-    return data || { success: false, message: 'Erro desconhecido' };
+    const result = data as { success: boolean; message: string } | null;
+    return result || { success: false, message: 'Erro desconhecido' };
 
   } catch (error: any) {
     console.error('Erro ao registrar aluno no evento:', error);
