@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import PhotoUpload from '@/components/shared/PhotoUpload';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import supabase from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 const InauguralClassPage: React.FC = () => {
   const navigate = useNavigate();

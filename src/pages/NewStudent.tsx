@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import PhotoUpload from '@/components/shared/PhotoUpload';
 import { useCreateStudent, useUpdateStudent } from '@/hooks/useStudents';
 import { useNavigate, useParams } from 'react-router-dom';
-import supabase from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 type FormData = {
   // Dados Pessoais
