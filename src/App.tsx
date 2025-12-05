@@ -53,38 +53,45 @@ const AppContent = () => {
   }
 
   return (
-    <AppLayout>
-      <Layout>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/inaugural-signup" element={<InauguralSignUp />} />
-          <Route path="/enrollment-signup" element={<EnrollmentSignUp />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/" element={<ProtectedRoute allowedFlows={['admin']}><Home /></ProtectedRoute>} />
-        <Route path="/financial" element={<ProtectedRoute allowedFlows={['admin']}><Financial /></ProtectedRoute>} />
-        <Route path="/calendar" element={<ProtectedRoute allowedFlows={['admin']}><Calendar /></ProtectedRoute>} />
-        <Route path="/students" element={<ProtectedRoute allowedFlows={['admin']}><Students /></ProtectedRoute>} />
-        <Route path="/enrollment" element={<ProtectedRoute allowedFlows={['admin']}><Enrollment /></ProtectedRoute>} />
-        <Route path="/teachers" element={<ProtectedRoute allowedFlows={['admin']}><Teachers /></ProtectedRoute>} />
-        <Route path="/roles" element={<ProtectedRoute allowedFlows={['admin']}><Roles /></ProtectedRoute>} />
-        <Route path="/employees" element={<ProtectedRoute allowedFlows={['admin']}><Employees /></ProtectedRoute>} />
-        <Route path="/modalities" element={<ProtectedRoute allowedFlows={['admin']}><Modalities /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute allowedFlows={['admin']}><Reports /></ProtectedRoute>} />
-        <Route path="/marketing" element={<ProtectedRoute allowedFlows={['admin']}><Marketing /></ProtectedRoute>} />
-        <Route path="/nfs-e" element={<ProtectedRoute allowedFlows={['admin']}><NFSe /></ProtectedRoute>} />
-        <Route path="/nfs-e/emit" element={<ProtectedRoute allowedFlows={['admin']}><NFSeEmit /></ProtectedRoute>} />
-        <Route path="/students/new" element={<ProtectedRoute allowedFlows={['admin']}><NewStudent /></ProtectedRoute>} />
-        <Route path="/events/new" element={<ProtectedRoute allowedFlows={['admin']}><NewEvent /></ProtectedRoute>} />
-        <Route path="/events/edit/:id" element={<ProtectedRoute allowedFlows={['admin']}><NewEvent /></ProtectedRoute>} />
-        <Route path="/inaugural-class" element={<ProtectedRoute><InauguralClass /></ProtectedRoute>} />
-        <Route path="/enrollment-form" element={<ProtectedRoute><EnrollmentForm /></ProtectedRoute>} />
-        <Route path="/inaugural-dashboard" element={<ProtectedRoute><GuardianInauguralDashboard /></ProtectedRoute>} />
-        <Route path="/enrollment-dashboard" element={<ProtectedRoute><EnrollmentDashboard /></ProtectedRoute>} />
-        <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
-      </Routes>
-      </Layout>
-    </AppLayout>
+    <Routes>
+      {/* Rotas públicas - SEM layout com menus */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/inaugural-signup" element={<InauguralSignUp />} />
+      <Route path="/enrollment-signup" element={<EnrollmentSignUp />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      
+      {/* Rotas protegidas - COM layout com menus */}
+      <Route path="/*" element={
+        <AppLayout>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<ProtectedRoute allowedFlows={['admin']}><Home /></ProtectedRoute>} />
+              <Route path="/financial" element={<ProtectedRoute allowedFlows={['admin']}><Financial /></ProtectedRoute>} />
+              <Route path="/calendar" element={<ProtectedRoute allowedFlows={['admin']}><Calendar /></ProtectedRoute>} />
+              <Route path="/students" element={<ProtectedRoute allowedFlows={['admin']}><Students /></ProtectedRoute>} />
+              <Route path="/enrollment" element={<ProtectedRoute allowedFlows={['admin']}><Enrollment /></ProtectedRoute>} />
+              <Route path="/teachers" element={<ProtectedRoute allowedFlows={['admin']}><Teachers /></ProtectedRoute>} />
+              <Route path="/roles" element={<ProtectedRoute allowedFlows={['admin']}><Roles /></ProtectedRoute>} />
+              <Route path="/employees" element={<ProtectedRoute allowedFlows={['admin']}><Employees /></ProtectedRoute>} />
+              <Route path="/modalities" element={<ProtectedRoute allowedFlows={['admin']}><Modalities /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute allowedFlows={['admin']}><Reports /></ProtectedRoute>} />
+              <Route path="/marketing" element={<ProtectedRoute allowedFlows={['admin']}><Marketing /></ProtectedRoute>} />
+              <Route path="/nfs-e" element={<ProtectedRoute allowedFlows={['admin']}><NFSe /></ProtectedRoute>} />
+              <Route path="/nfs-e/emit" element={<ProtectedRoute allowedFlows={['admin']}><NFSeEmit /></ProtectedRoute>} />
+              <Route path="/students/new" element={<ProtectedRoute allowedFlows={['admin']}><NewStudent /></ProtectedRoute>} />
+              <Route path="/events/new" element={<ProtectedRoute allowedFlows={['admin']}><NewEvent /></ProtectedRoute>} />
+              <Route path="/events/edit/:id" element={<ProtectedRoute allowedFlows={['admin']}><NewEvent /></ProtectedRoute>} />
+              <Route path="/inaugural-class" element={<ProtectedRoute><InauguralClass /></ProtectedRoute>} />
+              <Route path="/enrollment-form" element={<ProtectedRoute><EnrollmentForm /></ProtectedRoute>} />
+              <Route path="/inaugural-dashboard" element={<ProtectedRoute><GuardianInauguralDashboard /></ProtectedRoute>} />
+              <Route path="/enrollment-dashboard" element={<ProtectedRoute><EnrollmentDashboard /></ProtectedRoute>} />
+              <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+            </Routes>
+          </Layout>
+        </AppLayout>
+      } />
+    </Routes>
   );
 };
 
