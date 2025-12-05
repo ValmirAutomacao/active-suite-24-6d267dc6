@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
-// Importação PADRÃO correta (sem chaves), como o editor sugeriu.
-import supabase from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 // A interface que define o "contrato" do nosso contexto
 interface AuthContextType {

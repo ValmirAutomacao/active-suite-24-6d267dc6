@@ -1,7 +1,7 @@
 /**
  * Serviço para integração entre eventos inaugurais e sistema de aulas inaugurais
  */
-import supabase from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { getCurrentDateBrazil, formatDateBR, formatTimeRange } from '@/utils/dateUtils';
 
 export interface InauguralEvent {
