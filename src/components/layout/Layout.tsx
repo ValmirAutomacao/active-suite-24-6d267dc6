@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { useLocation, Link } from 'react-router-dom';
 import { usePlatform } from '@/hooks/usePlatform';
+import { useIsMobile } from '@/hooks/use-mobile';
 import MobileLayout from './MobileLayout';
 
 interface LayoutProps {
@@ -45,11 +46,12 @@ const routeNames: Record<string, string> = {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { isNative } = usePlatform();
+  const isMobile = useIsMobile();
   const currentPath = location.pathname;
   const pageName = routeNames[currentPath] || 'Página';
 
-  // Mobile native layout with bottom tabs
-  if (isNative) {
+  // Mobile layout with bottom tabs (native OR small screen)
+  if (isNative || isMobile) {
     return <MobileLayout>{children}</MobileLayout>;
   }
 

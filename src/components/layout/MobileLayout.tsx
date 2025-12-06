@@ -33,10 +33,10 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const pageName = routeNames[currentPath] || 'Bayer Academy';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col mobile-full-screen">
+    <div className="min-h-screen min-h-[100dvh] bg-background flex flex-col">
       {/* Mobile Header - Glassmorphism Effect */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 safe-area-top">
-        <div className="flex items-center justify-between h-14 px-4">
+      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/50">
+        <div className="flex items-center justify-between h-14 px-4 safe-area-top">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden">
               <img src="/favicon.ico" alt="Logo" className="w-5 h-5" />
@@ -52,8 +52,8 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content - Optimized for mobile scrolling */}
-      <main className="flex-1 overflow-auto pb-20 overscroll-contain">
-        <div className="mobile-content-wrapper">
+      <main className="flex-1 overflow-auto overscroll-contain">
+        <div className="p-4 pb-24">
           {children}
         </div>
       </main>

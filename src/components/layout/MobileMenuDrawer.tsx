@@ -79,9 +79,9 @@ const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({ open, onOpenChange 
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh] bg-background">
+      <DrawerContent className="max-h-[85vh] bg-background flex flex-col">
         {/* Header with app branding */}
-        <DrawerHeader className="flex items-center justify-between border-b border-border pb-4 px-4">
+        <DrawerHeader className="flex items-center justify-between border-b border-border pb-4 px-4 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
               <img src="/favicon.ico" alt="Logo" className="w-6 h-6" />
@@ -101,8 +101,8 @@ const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({ open, onOpenChange 
         
         <ScrollArea className="flex-1 px-4 py-4">
           {menuSections.map((section, sectionIndex) => (
-            <div key={section.title} className="mb-6">
-              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-2">
+            <div key={section.title} className="mb-5">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-2">
                 {section.title}
               </h3>
               <div className="space-y-1">
@@ -116,14 +116,11 @@ const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({ open, onOpenChange 
                       to={item.path}
                       onClick={() => onOpenChange(false)}
                       className={cn(
-                        "flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-200 active:scale-[0.98]",
+                        "flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200 active:scale-[0.98]",
                         isActive 
                           ? "bg-primary/15 border border-primary/30" 
                           : "hover:bg-muted/70 active:bg-muted"
                       )}
-                      style={{
-                        animationDelay: `${itemIndex * 50}ms`
-                      }}
                     >
                       <div className="flex items-center gap-3">
                         <div className={cn(
@@ -151,30 +148,24 @@ const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({ open, onOpenChange 
                 })}
               </div>
               {sectionIndex < menuSections.length - 1 && (
-                <Separator className="mt-4 bg-border/50" />
+                <Separator className="mt-3 bg-border/50" />
               )}
             </div>
           ))}
-
-          {/* Logout Button */}
-          <div className="mt-4 mb-8">
-            <Separator className="mb-4 bg-border/50" />
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-between w-full px-4 py-3.5 rounded-xl bg-destructive/10 hover:bg-destructive/20 active:scale-[0.98] transition-all duration-200 border border-destructive/20"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-destructive/20">
-                  <LogOut className="h-4 w-4 text-destructive" />
-                </div>
-                <span className="font-medium text-sm text-destructive">
-                  Sair do Sistema
-                </span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-destructive/50" />
-            </button>
-          </div>
         </ScrollArea>
+
+        {/* Logout Button - Fixed at Bottom */}
+        <div className="shrink-0 p-4 border-t border-border bg-background safe-area-bottom">
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-3 w-full px-4 py-3.5 rounded-xl bg-destructive/10 hover:bg-destructive/20 active:scale-[0.98] transition-all duration-200 border border-destructive/20"
+          >
+            <LogOut className="h-5 w-5 text-destructive" />
+            <span className="font-semibold text-sm text-destructive">
+              Sair do Sistema
+            </span>
+          </button>
+        </div>
       </DrawerContent>
     </Drawer>
   );

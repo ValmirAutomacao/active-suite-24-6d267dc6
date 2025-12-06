@@ -58,6 +58,10 @@
     --academy-shadow: 0 10px 30px -10px hsl(0 0% 0% / 0.5);
     --academy-border: 1px solid hsl(0 0% 15%);
     
+    /* Safe areas for mobile */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -139,6 +143,15 @@
     max-width: 100% !important;
   }
 
+  /* Responsive chart wrapper */
+  .responsive-chart {
+    @apply w-full overflow-x-auto;
+  }
+
+  .responsive-chart .recharts-wrapper {
+    min-width: 300px;
+  }
+
   /* Smooth scrolling for mobile */
   .mobile-scroll {
     -webkit-overflow-scrolling: touch;
@@ -182,6 +195,12 @@
     @apply grid grid-cols-2 gap-3;
   }
 
+  @media (max-width: 380px) {
+    .mobile-metrics-grid {
+      @apply grid-cols-1;
+    }
+  }
+
   /* Animate in from bottom */
   .animate-slide-up {
     animation: slideUp 0.3s ease-out forwards;
@@ -217,5 +236,15 @@
     50% {
       box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
     }
+  }
+
+  /* Bottom navigation fixed positioning */
+  .bottom-nav-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    padding-bottom: var(--safe-area-bottom);
   }
 }
