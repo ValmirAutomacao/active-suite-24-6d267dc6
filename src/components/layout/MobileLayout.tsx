@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import MobileBottomNav from './MobileBottomNav';
 import MobileMenuDrawer from './MobileMenuDrawer';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
 }
 
 const routeNames: Record<string, string> = {
-  '/': 'Bayer Academy',
+  '/': 'Dashboard',
   '/financial': 'Financeiro',
   '/marketing': 'Marketing',
   '/nfs-e': 'Notas Fiscais',
@@ -34,19 +33,27 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const pageName = routeNames[currentPath] || 'Bayer Academy';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Mobile Header */}
-      <header className="sticky top-0 z-40 bg-background border-b border-border safe-area-top">
-        <div className="flex items-center justify-center h-14 px-4">
-          <h1 className="text-lg font-semibold text-foreground truncate">
-            {pageName}
-          </h1>
+    <div className="min-h-screen bg-background flex flex-col mobile-full-screen">
+      {/* Mobile Header - Glassmorphism Effect */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 safe-area-top">
+        <div className="flex items-center justify-between h-14 px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden">
+              <img src="/favicon.ico" alt="Logo" className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-foreground leading-tight">
+                {pageName}
+              </h1>
+              <p className="text-[10px] text-muted-foreground">Bayer Academy</p>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-20">
-        <div className="p-4">
+      {/* Main Content - Optimized for mobile scrolling */}
+      <main className="flex-1 overflow-auto pb-20 overscroll-contain">
+        <div className="mobile-content-wrapper">
           {children}
         </div>
       </main>

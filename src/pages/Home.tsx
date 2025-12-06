@@ -4,11 +4,19 @@ import { useDashboardMetrics, useRecentPayments, useTodayEvents } from '@/hooks/
 import StatusBadge from '@/components/shared/StatusBadge';
 import ABCCurveChart from '@/components/reports/ABCCurveChart';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePlatform } from '@/hooks/usePlatform';
+import HomeMobile from './HomeMobile';
 
 const Home: React.FC = () => {
+  const { isNative } = usePlatform();
   const { data: metrics, isLoading: metricsLoading, error: metricsError } = useDashboardMetrics();
   const { data: recentPayments, isLoading: paymentsLoading } = useRecentPayments();
   const { data: todayEvents, isLoading: eventsLoading } = useTodayEvents();
+
+  // Use mobile-optimized layout for native apps
+  if (isNative) {
+    return <HomeMobile />;
+  }
 
   return (
     <div className="container mx-auto p-6">

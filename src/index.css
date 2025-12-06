@@ -71,6 +71,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     /* Mobile optimizations */
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
@@ -112,5 +113,109 @@
     min-height: 100dvh;
     width: 100%;
     overflow-x: hidden;
+  }
+}
+
+/* Mobile-specific responsive utilities */
+@layer utilities {
+  /* Mobile content wrapper */
+  .mobile-content-wrapper {
+    @apply px-4 py-4;
+  }
+
+  /* Mobile card styles */
+  .mobile-card {
+    @apply bg-card border border-border rounded-xl p-4 shadow-lg;
+  }
+
+  /* Mobile chart container - prevents overflow */
+  .mobile-chart-container {
+    @apply w-full overflow-hidden;
+    max-width: 100%;
+  }
+
+  .mobile-chart-container > div,
+  .mobile-chart-container svg {
+    max-width: 100% !important;
+  }
+
+  /* Smooth scrolling for mobile */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Touch-friendly buttons */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-xl;
+  }
+
+  /* Active state for touch */
+  .touch-active {
+    @apply active:scale-95 active:opacity-80 transition-all duration-150;
+  }
+
+  /* Horizontal scroll container */
+  .horizontal-scroll {
+    @apply flex overflow-x-auto gap-3 pb-2 -mx-4 px-4;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .horizontal-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .horizontal-scroll > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+
+  /* Grid for mobile metrics */
+  .mobile-metrics-grid {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  /* Animate in from bottom */
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Stagger animation delays */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
+
+  /* Pulse glow effect */
+  .glow-pulse {
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% {
+      box-shadow: 0 0 5px hsl(var(--primary) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+    }
   }
 }
