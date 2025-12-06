@@ -18,7 +18,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom">
+    <nav className="bottom-nav-fixed bg-card/95 backdrop-blur-lg border-t border-border">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -37,7 +37,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
             >
               {/* Active indicator */}
               {isActive && (
-                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-full animate-fade-in" />
+                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-full" />
               )}
               
               <div className={cn(
