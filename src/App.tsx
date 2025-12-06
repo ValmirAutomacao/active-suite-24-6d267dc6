@@ -36,6 +36,10 @@ import EnrollmentDashboard from "./pages/EnrollmentDashboard";
 import AuthCallback from "./pages/AuthCallback";
 import GuardianHome from "./pages/GuardianHome";
 import InauguralPreRegister from "./pages/InauguralPreRegister";
+import GuardianStudentData from "./pages/GuardianStudentData";
+import GuardianPayments from "./pages/GuardianPayments";
+import GuardianCalendar from "./pages/GuardianCalendar";
+import GuardianContract from "./pages/GuardianContract";
 
 const queryClient = new QueryClient();
 
@@ -75,10 +79,10 @@ const AppContent = () => {
         <Route path="inaugural-dashboard" element={<GuardianInauguralDashboard />} />
         <Route path="enrollment" element={<EnrollmentForm />} />
         <Route path="dashboard" element={<EnrollmentDashboard />} />
-        <Route path="student" element={<EnrollmentDashboard />} />
-        <Route path="payments" element={<EnrollmentDashboard />} />
-        <Route path="schedule" element={<EnrollmentDashboard />} />
-        <Route path="contract" element={<EnrollmentDashboard />} />
+            <Route path="student" element={<GuardianStudentData />} />
+            <Route path="payments" element={<GuardianPayments />} />
+            <Route path="calendar" element={<GuardianCalendar />} />
+            <Route path="contract" element={<GuardianContract />} />
       </Route>
       
       {/* Rotas Admin protegidas - COM layout com menus */}

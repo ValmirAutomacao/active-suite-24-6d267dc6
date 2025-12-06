@@ -29,7 +29,7 @@ const menuItems = [
   { path: '/guardian', label: 'Início', icon: Home, exact: true },
   { path: '/guardian/student', label: 'Dados do Aluno', icon: User },
   { path: '/guardian/payments', label: 'Mensalidades', icon: CreditCard },
-  { path: '/guardian/schedule', label: 'Agenda', icon: Calendar },
+  { path: '/guardian/calendar', label: 'Agenda', icon: Calendar },
   { path: '/guardian/contract', label: 'Contrato', icon: FileText },
 ];
 

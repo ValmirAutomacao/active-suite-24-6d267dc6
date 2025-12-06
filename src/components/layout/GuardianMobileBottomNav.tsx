@@ -11,7 +11,7 @@ const navItems = [
   { path: '/guardian', label: 'Início', icon: Home, exact: true },
   { path: '/guardian/student', label: 'Aluno', icon: User },
   { path: '/guardian/payments', label: 'Pagar', icon: CreditCard },
-  { path: '/guardian/schedule', label: 'Agenda', icon: Calendar },
+  { path: '/guardian/calendar', label: 'Agenda', icon: Calendar },
 ];
 
 const GuardianMobileBottomNav: React.FC<GuardianMobileBottomNavProps> = ({ onMenuClick }) => {
