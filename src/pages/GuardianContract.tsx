@@ -11,12 +11,14 @@ import {
   CreditCard, 
   Download,
   CheckCircle,
-  Clock,
-  Building
+  Building,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
 
 interface Student {
   id: string;
@@ -57,6 +59,7 @@ export default function GuardianContract() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   useEffect(() => {
     const fetchContractData = async () => {
@@ -126,6 +129,208 @@ export default function GuardianContract() {
       cash: 'Dinheiro',
     };
     return methods[method || ''] || method || 'Não informado';
+  };
+
+  const generatePDF = async () => {
+    if (!student) return;
+
+    setGeneratingPdf(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let y = 20;
+
+      // Header
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CONTRATO DE MATRÍCULA', pageWidth / 2, y, { align: 'center' });
+      y += 8;
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Bayer Academy', pageWidth / 2, y, { align: 'center' });
+      y += 15;
+
+      // Line separator
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
+
+      // Contract info
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DADOS DO CONTRATO', margin, y);
+      y += 8;
+
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Data de Matrícula: ${format(new Date(student.enrollmentDate), 'dd/MM/yyyy', { locale: ptBR })}`, margin, y);
+      y += 6;
+      doc.text(`Vencimento: Todo dia ${student.payment_due_date || 5}`, margin, y);
+      y += 6;
+      doc.text(`Status: Ativo`, margin, y);
+      y += 12;
+
+      // Student data
+      doc.setFont('helvetica', 'bold');
+      doc.text('DADOS DO ALUNO', margin, y);
+      y += 8;
+
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nome: ${student.name}`, margin, y);
+      y += 6;
+      doc.text(`CPF: ${student.cpf}`, margin, y);
+      y += 12;
+
+      // Guardian data
+      if (student.guardian) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('RESPONSÁVEL FINANCEIRO', margin, y);
+        y += 8;
+
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Nome: ${student.guardian.name}`, margin, y);
+        y += 6;
+        doc.text(`CPF: ${student.guardian.cpf}`, margin, y);
+        y += 6;
+        doc.text(`E-mail: ${student.guardian.email}`, margin, y);
+        y += 6;
+        doc.text(`Telefone: ${student.guardian.phone}`, margin, y);
+        y += 12;
+      }
+
+      // Modalities
+      if (sports.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('MODALIDADES CONTRATADAS', margin, y);
+        y += 8;
+
+        doc.setFont('helvetica', 'normal');
+        sports.forEach(sport => {
+          doc.text(`• ${sport.name} - ${formatCurrency(sport.monthlyFee)}/mês`, margin, y);
+          y += 6;
+        });
+        y += 6;
+      }
+
+      // Values
+      doc.setFont('helvetica', 'bold');
+      doc.text('VALORES', margin, y);
+      y += 8;
+
+      doc.setFont('helvetica', 'normal');
+      if (student.enrollment_fee && student.enrollment_fee > 0) {
+        doc.text(`Taxa de Matrícula: ${formatCurrency(student.enrollment_fee)}`, margin, y);
+        y += 6;
+      }
+      doc.text(`Mensalidade: ${formatCurrency(student.monthlyFee || 0)}`, margin, y);
+      y += 6;
+      if (enrollment) {
+        doc.text(`Forma de Pagamento: ${getPaymentMethodLabel(enrollment.payment_method)}`, margin, y);
+        y += 6;
+      }
+      y += 10;
+
+      // Check if we need a new page for terms
+      if (y > 200) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Terms
+      doc.setFont('helvetica', 'bold');
+      doc.text('TERMOS E CONDIÇÕES', margin, y);
+      y += 8;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      
+      const terms = [
+        'Este contrato estabelece os termos e condições para a prestação de serviços educacionais esportivos pela Bayer Academy ao aluno acima identificado.',
+        '',
+        'VIGÊNCIA: O contrato tem vigência de 12 meses a partir da data de matrícula, renovando-se automaticamente por igual período, salvo manifestação contrária de qualquer das partes com antecedência mínima de 30 dias.',
+        '',
+        'CANCELAMENTO: O cancelamento pode ser solicitado a qualquer momento, mediante aviso prévio de 30 dias, sendo devidas as mensalidades proporcionais ao período utilizado.',
+        '',
+        'INADIMPLÊNCIA: O não pagamento de 2 mensalidades consecutivas poderá acarretar a suspensão das atividades do aluno até a regularização.',
+        '',
+        'OBRIGAÇÕES DO CONTRATANTE:',
+        '• Efetuar o pagamento das mensalidades até a data de vencimento;',
+        '• Comunicar alterações cadastrais em até 5 dias úteis;',
+        '• Zelar pelos equipamentos e instalações da academia;',
+        '• Respeitar as normas internas de conduta.',
+        '',
+        'OBRIGAÇÕES DA CONTRATADA:',
+        '• Disponibilizar instrutores qualificados;',
+        '• Manter as instalações em condições adequadas de uso;',
+        '• Fornecer os materiais necessários para as atividades;',
+        '• Comunicar alterações de horários com antecedência mínima de 48 horas.',
+      ];
+
+      terms.forEach(term => {
+        if (term === '') {
+          y += 4;
+        } else {
+          const lines = doc.splitTextToSize(term, pageWidth - margin * 2);
+          lines.forEach((line: string) => {
+            if (y > 280) {
+              doc.addPage();
+              y = 20;
+            }
+            doc.text(line, margin, y);
+            y += 5;
+          });
+        }
+      });
+
+      y += 15;
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Signatures
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      const signatureY = y + 20;
+      const leftSignX = margin + 30;
+      const rightSignX = pageWidth - margin - 50;
+
+      // Left signature
+      doc.line(leftSignX - 25, signatureY, leftSignX + 35, signatureY);
+      doc.text('CONTRATANTE', leftSignX, signatureY + 6, { align: 'center' });
+      doc.setFontSize(8);
+      doc.text(student.guardian?.name || student.name, leftSignX, signatureY + 12, { align: 'center' });
+
+      // Right signature
+      doc.setFontSize(10);
+      doc.line(rightSignX - 25, signatureY, rightSignX + 35, signatureY);
+      doc.text('CONTRATADA', rightSignX, signatureY + 6, { align: 'center' });
+      doc.setFontSize(8);
+      doc.text('Bayer Academy', rightSignX, signatureY + 12, { align: 'center' });
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(
+        `Documento gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+        pageWidth / 2,
+        285,
+        { align: 'center' }
+      );
+
+      // Download
+      const fileName = `Contrato_${student.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+      doc.save(fileName);
+      
+      toast.success('Contrato baixado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar o contrato. Tente novamente.');
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   if (loading) {
@@ -326,9 +531,18 @@ export default function GuardianContract() {
       </Card>
 
       {/* Botão Download */}
-      <Button className="w-full" variant="outline">
-        <Download className="h-4 w-4 mr-2" />
-        Baixar Contrato em PDF
+      <Button 
+        className="w-full" 
+        variant="outline"
+        onClick={generatePDF}
+        disabled={generatingPdf}
+      >
+        {generatingPdf ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4 mr-2" />
+        )}
+        {generatingPdf ? 'Gerando PDF...' : 'Baixar Contrato em PDF'}
       </Button>
     </div>
   );
