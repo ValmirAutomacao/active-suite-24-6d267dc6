@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, FileText, Send, Check, Filter, Receipt, Loader2, Plus, Search, Calendar, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { DollarSign, FileText, Send, Check, Filter, Receipt, Loader2, Plus, Search, Calendar, RefreshCw, Pencil, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { usePayments, useMarkPaymentAsPaid, useGenerateMonthlyPayments } from '@/hooks/usePayments';
+import { usePayments, useMarkPaymentAsPaid, useUpdatePayment } from '@/hooks/usePayments';
 import StatusBadge from '@/components/shared/StatusBadge';
 import Button from '@/components/shared/Button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,10 +18,13 @@ const Financial: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<any>(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
 
   const { data: allPayments = [], isLoading, isError, refetch } = usePayments();
   const markAsPaid = useMarkPaymentAsPaid();
-  const generatePayments = useGenerateMonthlyPayments();
+  const updatePayment = useUpdatePayment();
 
   // Get unique months from payments
   const availableMonths = useMemo(() => {
@@ -102,6 +107,36 @@ const Financial: React.FC = () => {
       toast.success('Pagamento marcado como pago!');
     } catch (error: any) {
       toast.error(`Erro: ${error.message}`);
+    }
+  };
+
+  const handleEditPayment = (payment: any) => {
+    setEditingPayment(payment);
+    setEditAmount(String(payment.amount));
+    setEditDueDate(payment.due_date);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPayment) return;
+    
+    const amount = parseFloat(editAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Valor inválido');
+      return;
+    }
+
+    try {
+      await updatePayment.mutateAsync({
+        id: editingPayment.id,
+        data: {
+          amount,
+          due_date: editDueDate
+        }
+      });
+      toast.success('Mensalidade atualizada!');
+      setEditingPayment(null);
+    } catch (error: any) {
+      toast.error(`Erro ao atualizar: ${error.message}`);
     }
   };
 
@@ -376,15 +411,25 @@ const Financial: React.FC = () => {
                     <td className="p-4">
                       <div className="flex gap-2">
                         {payment.status !== 'paid' && (
-                          <Button
-                            size="sm"
-                            variant="success"
-                            onClick={() => handleMarkAsPaid(payment.id)}
-                            disabled={markAsPaid.isPending}
-                            title="Marcar como pago"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="success"
+                              onClick={() => handleMarkAsPaid(payment.id)}
+                              disabled={markAsPaid.isPending}
+                              title="Marcar como pago"
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditPayment(payment)}
+                              title="Editar mensalidade"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          </>
                         )}
                         {payment.status === 'paid' && (
                           <Button
@@ -437,6 +482,74 @@ const Financial: React.FC = () => {
           </Button>
         </div>
       )}
+
+      {/* Edit Payment Modal */}
+      <Dialog open={!!editingPayment} onOpenChange={(open) => !open && setEditingPayment(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Mensalidade</DialogTitle>
+          </DialogHeader>
+          
+          {editingPayment && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Aluno:</strong> {editingPayment.student_name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Modalidade:</strong> {editingPayment.sport}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Referência:</strong> {editingPayment.month}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-amount">Valor (R$)</Label>
+                <Input
+                  id="edit-amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  placeholder="0,00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-due-date">Data de Vencimento</Label>
+                <Input
+                  id="edit-due-date"
+                  type="date"
+                  value={editDueDate}
+                  onChange={(e) => setEditDueDate(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingPayment(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveEdit}
+              disabled={updatePayment.isPending}
+            >
+              {updatePayment.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Salvar'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
