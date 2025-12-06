@@ -40,6 +40,7 @@ import GuardianStudentData from "./pages/GuardianStudentData";
 import GuardianPayments from "./pages/GuardianPayments";
 import GuardianCalendar from "./pages/GuardianCalendar";
 import GuardianContract from "./pages/GuardianContract";
+import StudentFinancial from "./pages/StudentFinancial";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,7 @@ const AppContent = () => {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/financial" element={<Financial />} />
+                <Route path="/student-financial" element={<StudentFinancial />} />
                 <Route path="/calendar" element={<Calendar />} />
                 <Route path="/students" element={<Students />} />
                 <Route path="/enrollment" element={<Enrollment />} />

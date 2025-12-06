@@ -44,6 +44,7 @@ const navMainItems = [
     icon: Building,
     items: [
       { title: "Financeiro", url: "/financial", icon: DollarSign },
+      { title: "Ficha Financeira", url: "/student-financial", icon: FileText },
       { title: "Marketing", url: "/marketing", icon: Megaphone },
       { title: "Notas Fiscais", url: "/nfs-e", icon: FileText },
       { title: "Funções", url: "/roles", icon: UserCog },
