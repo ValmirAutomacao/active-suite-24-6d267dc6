@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CreditCard, Calendar, CheckCircle, Clock, AlertCircle, Receipt } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle, Clock, AlertCircle, Receipt, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
+import { toast } from 'sonner';
 interface Payment {
   id: string;
   student_name: string;
@@ -20,10 +21,51 @@ interface Payment {
 }
 
 export default function GuardianPayments() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [studentId, setStudentId] = useState<string | null>(null);
+  const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
 
+  // Handle payment success/cancel from Stripe redirect
+  useEffect(() => {
+    const handlePaymentResult = async () => {
+      const success = searchParams.get('success');
+      const paymentId = searchParams.get('payment_id');
+      const canceled = searchParams.get('canceled');
+
+      if (success === 'true' && paymentId) {
+        try {
+          // Confirm payment in database
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          const response = await supabase.functions.invoke('confirm-payment', {
+            body: { payment_id: paymentId },
+          });
+
+          if (response.error) {
+            console.error('Error confirming payment:', response.error);
+            toast.error('Erro ao confirmar pagamento. Entre em contato com o suporte.');
+          } else {
+            toast.success('Pagamento realizado com sucesso!');
+            // Refresh payments list
+            window.location.href = '/guardian/payments';
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          toast.error('Erro ao processar pagamento.');
+        }
+        
+        // Clear URL params
+        setSearchParams({});
+      } else if (canceled === 'true') {
+        toast.info('Pagamento cancelado.');
+        setSearchParams({});
+      }
+    };
+
+    handlePaymentResult();
+  }, [searchParams, setSearchParams]);
   useEffect(() => {
     const fetchPayments = async () => {
       try {
@@ -115,6 +157,37 @@ export default function GuardianPayments() {
     totalPending: payments.filter(p => p.status !== 'paid').reduce((sum, p) => sum + p.amount, 0),
   };
 
+  const handlePayment = async (payment: Payment) => {
+    setProcessingPaymentId(payment.id);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          payment_id: payment.id,
+          amount: payment.amount,
+          student_name: payment.student_name,
+          month: payment.month,
+          sport: payment.sport,
+        },
+      });
+
+      if (error) {
+        console.error('Error creating payment session:', error);
+        toast.error('Erro ao iniciar pagamento. Tente novamente.');
+        return;
+      }
+
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Erro ao processar pagamento.');
+    } finally {
+      setProcessingPaymentId(null);
+    }
+  };
   if (loading) {
     return (
       <div className="p-4 space-y-4">
@@ -237,9 +310,18 @@ export default function GuardianPayments() {
                   </div>
 
                   {payment.status !== 'paid' && (
-                    <Button className="w-full mt-4" size="sm">
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Pagar Agora
+                    <Button 
+                      className="w-full mt-4" 
+                      size="sm"
+                      onClick={() => handlePayment(payment)}
+                      disabled={processingPaymentId === payment.id}
+                    >
+                      {processingPaymentId === payment.id ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CreditCard className="h-4 w-4 mr-2" />
+                      )}
+                      {processingPaymentId === payment.id ? 'Processando...' : 'Pagar Agora'}
                     </Button>
                   )}
                 </CardContent>
