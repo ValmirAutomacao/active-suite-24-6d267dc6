@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Drawer,
   DrawerContent,
@@ -19,11 +19,16 @@ import {
   LogOut,
   ChevronRight,
   X,
-  Home
+  Home,
+  DollarSign,
+  Calendar,
+  Users,
+  ClipboardList
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MobileMenuDrawerProps {
   open: boolean;
@@ -35,7 +40,7 @@ const menuSections = [
     title: 'Gestão',
     items: [
       { path: '/', label: 'Dashboard', icon: Home },
-      { path: '/students', label: 'Alunos', icon: GraduationCap },
+      { path: '/students', label: 'Alunos', icon: Users },
       { path: '/students/new', label: 'Novo Aluno', icon: UserPlus },
       { path: '/teachers', label: 'Professores', icon: UserCog },
       { path: '/modalities', label: 'Modalidades', icon: Dumbbell },
@@ -44,15 +49,16 @@ const menuSections = [
   {
     title: 'Eventos',
     items: [
-      { path: '/calendar', label: 'Agenda', icon: CalendarPlus },
+      { path: '/calendar', label: 'Agenda', icon: Calendar },
       { path: '/events/new', label: 'Novo Evento', icon: CalendarPlus },
       { path: '/inaugural-class', label: 'Aula Inaugural', icon: GraduationCap },
+      { path: '/enrollment', label: 'Matrículas', icon: ClipboardList },
     ]
   },
   {
     title: 'Administrativo',
     items: [
-      { path: '/financial', label: 'Financeiro', icon: FileText },
+      { path: '/financial', label: 'Financeiro', icon: DollarSign },
       { path: '/nfs-e', label: 'Notas Fiscais', icon: FileText },
       { path: '/reports', label: 'Relatórios', icon: BarChart3 },
     ]
@@ -69,12 +75,19 @@ const menuSections = [
 
 const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({ open, onOpenChange }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
-    // Clear any local storage data if needed
-    localStorage.clear();
-    // Redirect to home or login
-    window.location.href = '/';
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Fallback
+      localStorage.clear();
+      window.location.href = '/login';
+    }
   };
 
   return (
