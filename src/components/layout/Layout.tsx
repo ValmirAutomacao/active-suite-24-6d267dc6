@@ -16,6 +16,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { useLocation, Link } from 'react-router-dom';
+import { usePlatform } from '@/hooks/usePlatform';
+import MobileLayout from './MobileLayout';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -42,9 +44,16 @@ const routeNames: Record<string, string> = {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const { isNative } = usePlatform();
   const currentPath = location.pathname;
   const pageName = routeNames[currentPath] || 'Página';
 
+  // Mobile native layout with bottom tabs
+  if (isNative) {
+    return <MobileLayout>{children}</MobileLayout>;
+  }
+
+  // Web layout with sidebar
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -60,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink asChild>
-                    <Link to="/">AcademyManager</Link>
+                    <Link to="/">Bayer Academy</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />

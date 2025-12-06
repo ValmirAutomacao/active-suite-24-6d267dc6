@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.a736ac3fcf094a07b5b128046aeac9f7',
-  appName: 'active-suite-24',
+  appName: 'Bayer Academy',
   webDir: 'dist',
   // server removido para produção - app carrega assets locais
   plugins: {
