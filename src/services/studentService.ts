@@ -192,19 +192,21 @@ export const studentService = {
 
   // Obter aluno efetivado pelo e-mail do responsável
   getEffectiveByGuardianEmail: async (email: string): Promise<Student | null> => {
-    const { data, error } = await supabase
+    // Buscar alunos ativos ou efetivos pelo email do guardian
+    const { data: allStudents, error } = await supabase
       .from(TABLE_NAME)
       .select('*')
-      .eq('guardian->>email', email)
-      .eq('status', 'effective')
-      .single();
+      .in('status', ['active', 'effective']);
 
-    if (error) {
-      if (error.code === 'PGRST116') return null; // Não encontrado
-      throw error;
-    }
+    if (error) throw error;
 
-    return data as Student;
+    // Filtrar pelo email do guardian
+    const foundStudent = allStudents?.find(student => {
+      const guardian = student.guardian as { email?: string } | null;
+      return guardian && guardian.email === email;
+    });
+
+    return foundStudent as Student || null;
   },
 
   // Obter pagamentos do aluno

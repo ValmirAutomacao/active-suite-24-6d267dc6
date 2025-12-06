@@ -23,9 +23,8 @@ const EnrollmentDashboard: React.FC = () => {
   const { data: events = [], isLoading: eventsLoading, isError: eventsError } = useStudentEvents(student?.id || '');
 
   const handlePayment = (paymentId: string) => {
-    toast.info('Funcionalidade de pagamento em desenvolvimento');
-    // Em uma implementação completa, isso redirecionaria para o gateway de pagamento
-    // navigate(`/payment/${paymentId}`);
+    // Redirecionar para página de pagamentos do guardian
+    navigate('/guardian/payments');
   };
 
   if (studentLoading || paymentsLoading || eventsLoading) {
@@ -231,7 +230,7 @@ const EnrollmentDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="flex items-center gap-2"
-                onClick={() => toast.info('Funcionalidade em desenvolvimento')}
+                onClick={() => navigate('/guardian/payments')}
               >
                 <CreditCard className="h-4 w-4" />
                 Ver Histórico Financeiro
@@ -239,7 +238,7 @@ const EnrollmentDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="flex items-center gap-2"
-                onClick={() => toast.info('Funcionalidade em desenvolvimento')}
+                onClick={() => navigate('/guardian/calendar')}
               >
                 <Calendar className="h-4 w-4" />
                 Ver Agenda Completa
@@ -247,10 +246,18 @@ const EnrollmentDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="flex items-center gap-2"
-                onClick={() => toast.info('Funcionalidade em desenvolvimento')}
+                onClick={() => navigate('/guardian/student')}
               >
                 <GraduationCap className="h-4 w-4" />
-                Atualizar Dados do Aluno
+                Dados do Aluno
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={() => navigate('/guardian/contract')}
+              >
+                <DollarSign className="h-4 w-4" />
+                Ver Contrato
               </Button>
             </div>
           </CardContent>
