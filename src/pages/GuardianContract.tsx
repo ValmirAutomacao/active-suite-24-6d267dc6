@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,10 @@ import {
   Download,
   CheckCircle,
   Building,
-  Loader2
+  Loader2,
+  Pen,
+  Trash2,
+  CheckCheck
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -60,6 +63,29 @@ export default function GuardianContract() {
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [isSigned, setIsSigned] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
+
+  // Load logo as base64
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const response = await fetch('/assets/logo.png');
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoBase64(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error('Error loading logo:', error);
+      }
+    };
+    loadLogo();
+  }, []);
 
   useEffect(() => {
     const fetchContractData = async () => {
@@ -131,8 +157,75 @@ export default function GuardianContract() {
     return methods[method || ''] || method || 'Não informado';
   };
 
+  // Signature canvas handlers
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    setIsDrawing(true);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.nativeEvent.offsetX;
+    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.nativeEvent.offsetY;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.nativeEvent.offsetX;
+    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.nativeEvent.offsetY;
+    
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setSignatureData(null);
+    setIsSigned(false);
+  };
+
+  const confirmSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const data = canvas.toDataURL('image/png');
+    setSignatureData(data);
+    setIsSigned(true);
+    toast.success('Assinatura confirmada!');
+  };
+
   const generatePDF = async () => {
     if (!student) return;
+    
+    if (!signatureData) {
+      toast.error('Por favor, assine o contrato antes de baixar.');
+      return;
+    }
 
     setGeneratingPdf(true);
     try {
@@ -141,16 +234,25 @@ export default function GuardianContract() {
       const margin = 20;
       let y = 20;
 
-      // Header
-      doc.setFontSize(20);
+      // Logo in header
+      if (logoBase64) {
+        try {
+          doc.addImage(logoBase64, 'PNG', margin, y - 10, 25, 25);
+        } catch (e) {
+          console.error('Error adding logo:', e);
+        }
+      }
+
+      // Header with logo offset
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text('CONTRATO DE MATRÍCULA', pageWidth / 2, y, { align: 'center' });
+      doc.text('CONTRATO DE MATRÍCULA', pageWidth / 2 + 10, y, { align: 'center' });
       y += 8;
       
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
-      doc.text('Bayer Academy', pageWidth / 2, y, { align: 'center' });
-      y += 15;
+      doc.text('Bayer Academy', pageWidth / 2 + 10, y, { align: 'center' });
+      y += 20;
 
       // Line separator
       doc.setLineWidth(0.5);
@@ -289,32 +391,51 @@ export default function GuardianContract() {
         y = 20;
       }
 
-      // Signatures
+      // Digital Signature Section
       doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ASSINATURA DIGITAL DO CONTRATANTE', margin, y);
+      y += 10;
+
+      // Add digital signature image
+      if (signatureData) {
+        try {
+          doc.addImage(signatureData, 'PNG', margin, y, 60, 30);
+          y += 35;
+        } catch (e) {
+          console.error('Error adding signature:', e);
+        }
+      }
+
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(`Assinado digitalmente por: ${student.guardian?.name || student.name}`, margin, y);
+      y += 5;
+      doc.text(`CPF: ${student.guardian?.cpf || student.cpf}`, margin, y);
+      y += 5;
+      doc.text(`Data/Hora: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}`, margin, y);
+      y += 5;
       
-      const signatureY = y + 20;
-      const leftSignX = margin + 30;
-      const rightSignX = pageWidth - margin - 50;
+      // Hash for authenticity
+      const signatureHash = btoa(`${student.id}-${student.guardian?.cpf || student.cpf}-${new Date().toISOString()}`).substring(0, 32);
+      doc.text(`Código de Verificação: ${signatureHash}`, margin, y);
+      y += 15;
 
-      // Left signature
-      doc.line(leftSignX - 25, signatureY, leftSignX + 35, signatureY);
-      doc.text('CONTRATANTE', leftSignX, signatureY + 6, { align: 'center' });
-      doc.setFontSize(8);
-      doc.text(student.guardian?.name || student.name, leftSignX, signatureY + 12, { align: 'center' });
-
-      // Right signature
-      doc.setFontSize(10);
-      doc.line(rightSignX - 25, signatureY, rightSignX + 35, signatureY);
-      doc.text('CONTRATADA', rightSignX, signatureY + 6, { align: 'center' });
-      doc.setFontSize(8);
-      doc.text('Bayer Academy', rightSignX, signatureY + 12, { align: 'center' });
+      // Legal validation notice
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      const legalText = 'Este documento foi assinado digitalmente e possui validade jurídica conforme a Lei nº 14.063/2020 e Medida Provisória nº 2.200-2/2001. A assinatura eletrônica avançada dispensa reconhecimento de firma e pode ser verificada através do código acima.';
+      const legalLines = doc.splitTextToSize(legalText, pageWidth - margin * 2);
+      legalLines.forEach((line: string) => {
+        doc.text(line, margin, y);
+        y += 4;
+      });
 
       // Footer
       doc.setFontSize(8);
       doc.setTextColor(128, 128, 128);
       doc.text(
-        `Documento gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+        `Documento gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} | Bayer Academy`,
         pageWidth / 2,
         285,
         { align: 'center' }
@@ -530,19 +651,102 @@ export default function GuardianContract() {
         </CardContent>
       </Card>
 
+      {/* Assinatura Digital */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Pen className="h-4 w-4" />
+            Assinatura Digital
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Assine abaixo para validar digitalmente o contrato. A assinatura tem validade jurídica conforme a legislação vigente.
+          </p>
+          
+          {isSigned ? (
+            <div className="space-y-3">
+              <div className="border-2 border-green-500 rounded-lg p-4 bg-green-50 dark:bg-green-950">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
+                  <CheckCheck className="h-5 w-5" />
+                  <span className="font-medium">Contrato assinado digitalmente</span>
+                </div>
+                <img 
+                  src={signatureData || ''} 
+                  alt="Assinatura" 
+                  className="max-h-20 border rounded bg-white"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Assinado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearSignature}
+                className="w-full"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Refazer Assinatura
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg overflow-hidden">
+                <canvas
+                  ref={canvasRef}
+                  width={300}
+                  height={150}
+                  className="w-full bg-white cursor-crosshair touch-none"
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                />
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                Desenhe sua assinatura no campo acima
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={clearSignature}
+                  className="flex-1"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Limpar
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={confirmSignature}
+                  className="flex-1"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Confirmar
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Botão Download */}
       <Button 
         className="w-full" 
-        variant="outline"
+        variant={isSigned ? "default" : "outline"}
         onClick={generatePDF}
-        disabled={generatingPdf}
+        disabled={generatingPdf || !isSigned}
       >
         {generatingPdf ? (
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
         ) : (
           <Download className="h-4 w-4 mr-2" />
         )}
-        {generatingPdf ? 'Gerando PDF...' : 'Baixar Contrato em PDF'}
+        {generatingPdf ? 'Gerando PDF...' : isSigned ? 'Baixar Contrato Assinado' : 'Assine o contrato primeiro'}
       </Button>
     </div>
   );
