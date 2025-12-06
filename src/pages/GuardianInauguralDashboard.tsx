@@ -19,9 +19,8 @@ const GuardianInauguralDashboard: React.FC = () => {
   const { data: inauguralClass, isLoading: classLoading, isError: classError, error: classErrorMessage } = useInauguralClassByStudentId(student?.id || '');
 
   const handleFinishEnrollment = () => {
-    // Redirecionar para a página de matrícula/pagamento
-    // Os dados do estudante já cadastrados serão utilizados
-    navigate('/enrollment-signup?from=inaugural&student_id=' + student?.id);
+    // Redirecionar para a página de matrícula no ambiente guardian
+    navigate('/guardian/enrollment?from=inaugural&student_id=' + student?.id);
   };
 
   if (studentLoading || classLoading) {
@@ -121,7 +120,7 @@ const GuardianInauguralDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    <span>Horário: 14:00</span>
+                    <span>Horário: {inauguralClass.selected_time || 'A definir'}</span>
                   </div>
                   <div>
                     <h4 className="font-medium mb-1">Modalidade:</h4>
