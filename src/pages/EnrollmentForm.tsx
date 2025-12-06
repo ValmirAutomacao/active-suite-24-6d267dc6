@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { User, Users, MapPin, Heart, Trophy, Calendar, ArrowRight, DollarSign } from 'lucide-react';
 import { useSports } from '@/hooks/useSports';
+import { useProvisionalStudentByGuardianEmail } from '@/hooks/useStudents';
 import { toast } from 'sonner';
 import PhotoUpload from '@/components/shared/PhotoUpload';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,9 +20,16 @@ import { useAuth } from '@/contexts/AuthContext';
 const EnrollmentForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { profile, user, updateProfile } = useAuth();
   const isGuardianFlow = location.pathname.startsWith('/guardian');
+  const fromInaugural = searchParams.get('from') === 'inaugural';
   const { data: sports, isLoading: sportsLoading } = useSports();
+  
+  // Buscar aluno provisório se vindo da aula inaugural
+  const { data: provisionalStudent } = useProvisionalStudentByGuardianEmail(
+    isGuardianFlow && fromInaugural && user?.email ? user.email : ''
+  );
   const [currentTab, setCurrentTab] = useState('personal');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -71,7 +79,7 @@ const EnrollmentForm: React.FC = () => {
     }
   });
 
-  // Pré-preencher dados do guardian logado
+  // Pré-preencher dados do guardian logado e aluno provisório
   useEffect(() => {
     if (isGuardianFlow && user?.email) {
       setFormData(prev => ({
@@ -84,6 +92,27 @@ const EnrollmentForm: React.FC = () => {
       }));
     }
   }, [isGuardianFlow, user, profile]);
+
+  // Pré-preencher dados do aluno provisório (vindo da aula inaugural)
+  useEffect(() => {
+    if (provisionalStudent && fromInaugural) {
+      const guardian = provisionalStudent.guardian as { name?: string; phone?: string; email?: string } | null;
+      setFormData(prev => ({
+        ...prev,
+        name: provisionalStudent.name || prev.name,
+        birthDate: provisionalStudent.birthDate || prev.birthDate,
+        cpf: provisionalStudent.cpf || prev.cpf,
+        photo: provisionalStudent.photo || prev.photo,
+        selectedSportId: provisionalStudent.enrolledSports?.[0] || prev.selectedSportId,
+        guardian: {
+          ...prev.guardian,
+          name: guardian?.name || prev.guardian.name,
+          phone: guardian?.phone || prev.guardian.phone,
+          email: guardian?.email || prev.guardian.email
+        }
+      }));
+    }
+  }, [provisionalStudent, fromInaugural]);
 
   const handleInputChange = (field: string, value: any) => {
     const keys = field.split('.');
