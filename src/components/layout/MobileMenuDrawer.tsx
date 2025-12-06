@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Drawer,
   DrawerContent,
@@ -16,10 +16,14 @@ import {
   BarChart3,
   CalendarPlus,
   UserPlus,
-  X
+  LogOut,
+  ChevronRight,
+  X,
+  Home
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 interface MobileMenuDrawerProps {
   open: boolean;
@@ -30,6 +34,7 @@ const menuSections = [
   {
     title: 'Gestão',
     items: [
+      { path: '/', label: 'Dashboard', icon: Home },
       { path: '/students', label: 'Alunos', icon: GraduationCap },
       { path: '/students/new', label: 'Novo Aluno', icon: UserPlus },
       { path: '/teachers', label: 'Professores', icon: UserCog },
@@ -63,46 +68,112 @@ const menuSections = [
 ];
 
 const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({ open, onOpenChange }) => {
+  const location = useLocation();
+
+  const handleLogout = () => {
+    // Clear any local storage data if needed
+    localStorage.clear();
+    // Redirect to home or login
+    window.location.href = '/';
+  };
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh]">
-        <DrawerHeader className="flex items-center justify-between border-b pb-4">
-          <DrawerTitle className="text-lg font-semibold">Menu</DrawerTitle>
+      <DrawerContent className="max-h-[90vh] bg-background">
+        {/* Header with app branding */}
+        <DrawerHeader className="flex items-center justify-between border-b border-border pb-4 px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+              <img src="/favicon.ico" alt="Logo" className="w-6 h-6" />
+            </div>
+            <div>
+              <DrawerTitle className="text-lg font-bold text-foreground">Bayer Academy</DrawerTitle>
+              <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+            </div>
+          </div>
           <button 
             onClick={() => onOpenChange(false)}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
+            className="p-2.5 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all duration-200"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </DrawerHeader>
         
-        <ScrollArea className="flex-1 px-4 py-2">
+        <ScrollArea className="flex-1 px-4 py-4">
           {menuSections.map((section, sectionIndex) => (
-            <div key={section.title} className="mb-4">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-2">
+            <div key={section.title} className="mb-6">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-2">
                 {section.title}
               </h3>
               <div className="space-y-1">
-                {section.items.map((item) => {
+                {section.items.map((item, itemIndex) => {
                   const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
                       onClick={() => onOpenChange(false)}
-                      className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition-colors"
+                      className={cn(
+                        "flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-200 active:scale-[0.98]",
+                        isActive 
+                          ? "bg-primary/15 border border-primary/30" 
+                          : "hover:bg-muted/70 active:bg-muted"
+                      )}
+                      style={{
+                        animationDelay: `${itemIndex * 50}ms`
+                      }}
                     >
-                      <Icon className="h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium">{item.label}</span>
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "p-2 rounded-lg transition-colors",
+                          isActive ? "bg-primary/20" : "bg-muted/50"
+                        )}>
+                          <Icon className={cn(
+                            "h-4 w-4",
+                            isActive ? "text-primary" : "text-muted-foreground"
+                          )} />
+                        </div>
+                        <span className={cn(
+                          "font-medium text-sm",
+                          isActive ? "text-primary" : "text-foreground"
+                        )}>
+                          {item.label}
+                        </span>
+                      </div>
+                      <ChevronRight className={cn(
+                        "h-4 w-4 transition-colors",
+                        isActive ? "text-primary" : "text-muted-foreground/50"
+                      )} />
                     </Link>
                   );
                 })}
               </div>
               {sectionIndex < menuSections.length - 1 && (
-                <Separator className="mt-4" />
+                <Separator className="mt-4 bg-border/50" />
               )}
             </div>
           ))}
+
+          {/* Logout Button */}
+          <div className="mt-4 mb-8">
+            <Separator className="mb-4 bg-border/50" />
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-between w-full px-4 py-3.5 rounded-xl bg-destructive/10 hover:bg-destructive/20 active:scale-[0.98] transition-all duration-200 border border-destructive/20"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive/20">
+                  <LogOut className="h-4 w-4 text-destructive" />
+                </div>
+                <span className="font-medium text-sm text-destructive">
+                  Sair do Sistema
+                </span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-destructive/50" />
+            </button>
+          </div>
         </ScrollArea>
       </DrawerContent>
     </Drawer>
