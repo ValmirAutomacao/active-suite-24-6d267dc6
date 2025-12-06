@@ -2,12 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext"; // Versão real com Supabase
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { EditModeProvider } from "./contexts/EditModeContext";
 import Layout from "./components/layout/Layout";
 import AppLayout from "./components/layout/AppLayout";
-import ProtectedRoute from "./components/auth/ProtectedRoute"; // Importe o ProtectedRoute
+import GuardianMobileLayout from "./components/layout/GuardianMobileLayout";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Home from "./pages/Home";
 import Financial from "./pages/Financial";
 import Calendar from "./pages/Calendar";
@@ -33,6 +34,8 @@ import EnrollmentForm from "./pages/EnrollmentForm";
 import GuardianInauguralDashboard from "./pages/GuardianInauguralDashboard";
 import EnrollmentDashboard from "./pages/EnrollmentDashboard";
 import AuthCallback from "./pages/AuthCallback";
+import GuardianHome from "./pages/GuardianHome";
+import InauguralPreRegister from "./pages/InauguralPreRegister";
 
 const queryClient = new QueryClient();
 
@@ -61,35 +64,54 @@ const AppContent = () => {
       <Route path="/enrollment-signup" element={<EnrollmentSignUp />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       
-      {/* Rotas protegidas - COM layout com menus */}
+      {/* Rotas do Responsável (Guardian) - Layout próprio */}
+      <Route path="/guardian" element={
+        <ProtectedRoute allowedFlows={['inaugural', 'enrollment']}>
+          <GuardianMobileLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<GuardianHome />} />
+        <Route path="inaugural" element={<InauguralPreRegister />} />
+        <Route path="inaugural-dashboard" element={<GuardianInauguralDashboard />} />
+        <Route path="enrollment" element={<EnrollmentForm />} />
+        <Route path="dashboard" element={<EnrollmentDashboard />} />
+        <Route path="student" element={<EnrollmentDashboard />} />
+        <Route path="payments" element={<EnrollmentDashboard />} />
+        <Route path="schedule" element={<EnrollmentDashboard />} />
+        <Route path="contract" element={<EnrollmentDashboard />} />
+      </Route>
+      
+      {/* Rotas Admin protegidas - COM layout com menus */}
       <Route path="/*" element={
-        <AppLayout>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<ProtectedRoute allowedFlows={['admin']}><Home /></ProtectedRoute>} />
-              <Route path="/financial" element={<ProtectedRoute allowedFlows={['admin']}><Financial /></ProtectedRoute>} />
-              <Route path="/calendar" element={<ProtectedRoute allowedFlows={['admin']}><Calendar /></ProtectedRoute>} />
-              <Route path="/students" element={<ProtectedRoute allowedFlows={['admin']}><Students /></ProtectedRoute>} />
-              <Route path="/enrollment" element={<ProtectedRoute allowedFlows={['admin']}><Enrollment /></ProtectedRoute>} />
-              <Route path="/teachers" element={<ProtectedRoute allowedFlows={['admin']}><Teachers /></ProtectedRoute>} />
-              <Route path="/roles" element={<ProtectedRoute allowedFlows={['admin']}><Roles /></ProtectedRoute>} />
-              <Route path="/employees" element={<ProtectedRoute allowedFlows={['admin']}><Employees /></ProtectedRoute>} />
-              <Route path="/modalities" element={<ProtectedRoute allowedFlows={['admin']}><Modalities /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute allowedFlows={['admin']}><Reports /></ProtectedRoute>} />
-              <Route path="/marketing" element={<ProtectedRoute allowedFlows={['admin']}><Marketing /></ProtectedRoute>} />
-              <Route path="/nfs-e" element={<ProtectedRoute allowedFlows={['admin']}><NFSe /></ProtectedRoute>} />
-              <Route path="/nfs-e/emit" element={<ProtectedRoute allowedFlows={['admin']}><NFSeEmit /></ProtectedRoute>} />
-              <Route path="/students/new" element={<ProtectedRoute allowedFlows={['admin']}><NewStudent /></ProtectedRoute>} />
-              <Route path="/events/new" element={<ProtectedRoute allowedFlows={['admin']}><NewEvent /></ProtectedRoute>} />
-              <Route path="/events/edit/:id" element={<ProtectedRoute allowedFlows={['admin']}><NewEvent /></ProtectedRoute>} />
-              <Route path="/inaugural-class" element={<ProtectedRoute><InauguralClass /></ProtectedRoute>} />
-              <Route path="/enrollment-form" element={<ProtectedRoute><EnrollmentForm /></ProtectedRoute>} />
-              <Route path="/inaugural-dashboard" element={<ProtectedRoute><GuardianInauguralDashboard /></ProtectedRoute>} />
-              <Route path="/enrollment-dashboard" element={<ProtectedRoute><EnrollmentDashboard /></ProtectedRoute>} />
-              <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
-            </Routes>
-          </Layout>
-        </AppLayout>
+        <ProtectedRoute allowedFlows={['admin']}>
+          <AppLayout>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/financial" element={<Financial />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/students" element={<Students />} />
+                <Route path="/enrollment" element={<Enrollment />} />
+                <Route path="/teachers" element={<Teachers />} />
+                <Route path="/roles" element={<Roles />} />
+                <Route path="/employees" element={<Employees />} />
+                <Route path="/modalities" element={<Modalities />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/marketing" element={<Marketing />} />
+                <Route path="/nfs-e" element={<NFSe />} />
+                <Route path="/nfs-e/emit" element={<NFSeEmit />} />
+                <Route path="/students/new" element={<NewStudent />} />
+                <Route path="/events/new" element={<NewEvent />} />
+                <Route path="/events/edit/:id" element={<NewEvent />} />
+                <Route path="/inaugural-class" element={<InauguralClass />} />
+                <Route path="/enrollment-form" element={<EnrollmentForm />} />
+                <Route path="/inaugural-dashboard" element={<GuardianInauguralDashboard />} />
+                <Route path="/enrollment-dashboard" element={<EnrollmentDashboard />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </AppLayout>
+        </ProtectedRoute>
       } />
     </Routes>
   );
@@ -98,7 +120,7 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AuthProvider> {/* AuthProvider deve envolver a aplicação */}
+      <AuthProvider>
         <EditModeProvider>
           <TooltipProvider>
             <Toaster />
