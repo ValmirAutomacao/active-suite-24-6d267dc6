@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DollarSign, FileText, Send, Check, Filter, Receipt, Loader2, Plus, Search, Calendar, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { usePayments, useMarkPaymentAsPaid, useUpdatePayment, useDeletePayment } from '@/hooks/usePayments';
+import { usePayments, useMarkPaymentAsPaid, useUpdatePayment, useDeletePayment, useCreatePayment } from '@/hooks/usePayments';
+import { useStudents } from '@/hooks/useStudents';
 import StatusBadge from '@/components/shared/StatusBadge';
 import Button from '@/components/shared/Button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,8 +25,20 @@ const Financial: React.FC = () => {
   const [deletingPayment, setDeletingPayment] = useState<any>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
+  
+  // Create payment modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newPayment, setNewPayment] = useState({
+    student_id: '',
+    amount: '',
+    due_date: '',
+    sport: '',
+    month: ''
+  });
 
   const { data: allPayments = [], isLoading, isError, refetch } = usePayments();
+  const { data: students = [] } = useStudents();
+  const createPayment = useCreatePayment();
   const markAsPaid = useMarkPaymentAsPaid();
   const updatePayment = useUpdatePayment();
   const deletePayment = useDeletePayment();
@@ -155,6 +169,78 @@ const Financial: React.FC = () => {
     }
   };
 
+  const handleOpenCreateModal = () => {
+    const today = new Date();
+    const defaultDueDate = new Date(today.getFullYear(), today.getMonth(), 5);
+    if (defaultDueDate < today) {
+      defaultDueDate.setMonth(defaultDueDate.getMonth() + 1);
+    }
+    
+    const monthNames = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    const defaultMonth = `${monthNames[defaultDueDate.getMonth()]}/${defaultDueDate.getFullYear()}`;
+    
+    setNewPayment({
+      student_id: '',
+      amount: '',
+      due_date: defaultDueDate.toISOString().split('T')[0],
+      sport: 'Taxa Avulsa',
+      month: defaultMonth
+    });
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreatePayment = async () => {
+    if (!newPayment.student_id) {
+      toast.error('Selecione um aluno');
+      return;
+    }
+    
+    const amount = parseFloat(newPayment.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Valor inválido');
+      return;
+    }
+    
+    if (!newPayment.due_date) {
+      toast.error('Informe a data de vencimento');
+      return;
+    }
+
+    const selectedStudent = students.find(s => s.id === newPayment.student_id);
+    if (!selectedStudent) {
+      toast.error('Aluno não encontrado');
+      return;
+    }
+
+    try {
+      await createPayment.mutateAsync({
+        student_id: newPayment.student_id,
+        student_name: selectedStudent.name,
+        amount,
+        due_date: newPayment.due_date,
+        sport: newPayment.sport || 'Taxa Avulsa',
+        month: newPayment.month,
+        status: 'pending',
+        paid_date: null
+      });
+      
+      toast.success('Pagamento criado com sucesso!');
+      setIsCreateModalOpen(false);
+      setNewPayment({
+        student_id: '',
+        amount: '',
+        due_date: '',
+        sport: '',
+        month: ''
+      });
+    } catch (error: any) {
+      toast.error(`Erro ao criar pagamento: ${error.message}`);
+    }
+  };
+
   const handleGenerateNextMonth = async () => {
     setIsGenerating(true);
     try {
@@ -228,11 +314,18 @@ const Financial: React.FC = () => {
         </div>
         <div className="flex flex-wrap gap-3">
           <Button 
+            variant="primary" 
+            onClick={handleOpenCreateModal}
+          >
+            <Plus className="w-4 h-4" />
+            Novo Pagamento
+          </Button>
+          <Button 
             variant="outline" 
             onClick={handleGenerateNextMonth} 
             disabled={isGenerating}
           >
-            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
             Gerar Próximo Mês
           </Button>
           <Button 
@@ -609,6 +702,106 @@ const Financial: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Payment Modal */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Novo Pagamento Avulso</DialogTitle>
+            <DialogDescription>
+              Crie um pagamento manual para taxas extras ou casos especiais.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-student">Aluno *</Label>
+              <Select 
+                value={newPayment.student_id} 
+                onValueChange={(value) => setNewPayment(prev => ({ ...prev, student_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um aluno" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students
+                    .filter(s => s.status === 'active' || s.status === 'effective')
+                    .map(student => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-amount">Valor (R$) *</Label>
+              <Input
+                id="new-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={newPayment.amount}
+                onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
+                placeholder="0,00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-due-date">Data de Vencimento *</Label>
+              <Input
+                id="new-due-date"
+                type="date"
+                value={newPayment.due_date}
+                onChange={(e) => setNewPayment(prev => ({ ...prev, due_date: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-sport">Descrição / Motivo</Label>
+              <Input
+                id="new-sport"
+                type="text"
+                value={newPayment.sport}
+                onChange={(e) => setNewPayment(prev => ({ ...prev, sport: e.target.value }))}
+                placeholder="Ex: Taxa de material, Uniforme, Taxa extra..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-month">Referência (Mês/Ano)</Label>
+              <Input
+                id="new-month"
+                type="text"
+                value={newPayment.month}
+                onChange={(e) => setNewPayment(prev => ({ ...prev, month: e.target.value }))}
+                placeholder="Ex: Janeiro/2025"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreatePayment}
+              disabled={createPayment.isPending}
+            >
+              {createPayment.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Criar Pagamento'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
