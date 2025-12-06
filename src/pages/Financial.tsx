@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DollarSign, FileText, Send, Check, Filter, Receipt, Loader2, Plus, Search, Calendar, RefreshCw, Pencil, Trash2 } from 'lucide-react';
+import { DollarSign, FileText, Send, Check, Filter, Receipt, Loader2, Plus, Search, Calendar, RefreshCw, Pencil, Trash2, Download, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePayments, useMarkPaymentAsPaid, useUpdatePayment, useDeletePayment, useCreatePayment } from '@/hooks/usePayments';
 import { useStudents } from '@/hooks/useStudents';
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Financial: React.FC = () => {
   const navigate = useNavigate();
@@ -101,6 +102,36 @@ const Financial: React.FC = () => {
       }
     };
   }, [allPayments, selectedMonth]);
+
+  // Chart data for monthly evolution
+  const chartData = useMemo(() => {
+    const monthlyData: Record<string, { month: string; paid: number; pending: number; overdue: number }> = {};
+    
+    allPayments.forEach(payment => {
+      if (!monthlyData[payment.month]) {
+        monthlyData[payment.month] = { month: payment.month, paid: 0, pending: 0, overdue: 0 };
+      }
+      
+      const amount = Number(payment.amount);
+      if (payment.status === 'paid') {
+        monthlyData[payment.month].paid += amount;
+      } else if (payment.status === 'overdue') {
+        monthlyData[payment.month].overdue += amount;
+      } else {
+        monthlyData[payment.month].pending += amount;
+      }
+    });
+    
+    // Sort by month/year
+    return Object.values(monthlyData).sort((a, b) => {
+      const [monthA, yearA] = a.month.split('/');
+      const [monthB, yearB] = b.month.split('/');
+      if (yearA !== yearB) return yearA.localeCompare(yearB);
+      const monthOrder = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      return monthOrder.indexOf(monthA) - monthOrder.indexOf(monthB);
+    }).slice(-6); // Last 6 months
+  }, [allPayments]);
 
   const handleSelectAll = () => {
     if (selectedPayments.length === filteredPayments.length) {
@@ -277,6 +308,42 @@ const Financial: React.FC = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    if (filteredPayments.length === 0) {
+      toast.error('Nenhum pagamento para exportar');
+      return;
+    }
+
+    const headers = ['Aluno', 'Modalidade', 'Mês', 'Valor', 'Vencimento', 'Status', 'Data Pagamento'];
+    
+    const rows = filteredPayments.map(payment => [
+      payment.student_name,
+      payment.sport,
+      payment.month,
+      Number(payment.amount).toFixed(2).replace('.', ','),
+      new Date(payment.due_date).toLocaleDateString('pt-BR'),
+      payment.status === 'paid' ? 'Pago' : payment.status === 'overdue' ? 'Vencido' : 'Pendente',
+      payment.paid_date ? new Date(payment.paid_date).toLocaleDateString('pt-BR') : '-'
+    ]);
+
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(row => row.join(';'))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pagamentos_${selectedMonth === 'all' ? 'todos' : selectedMonth.replace('/', '-')}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`${filteredPayments.length} pagamentos exportados!`);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
@@ -342,8 +409,55 @@ const Financial: React.FC = () => {
             <RefreshCw className="w-4 h-4" />
             Atualizar
           </Button>
+          <Button 
+            variant="outline"
+            onClick={handleExportCSV}
+          >
+            <Download className="w-4 h-4" />
+            Exportar CSV
+          </Button>
         </div>
       </div>
+
+      {/* Monthly Evolution Chart */}
+      {chartData.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-6 mb-8 shadow-academy">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Evolução Mensal</h3>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12 }}
+                  className="fill-muted-foreground"
+                />
+                <YAxis 
+                  tickFormatter={(value) => `R$${(value / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 12 }}
+                  className="fill-muted-foreground"
+                />
+                <Tooltip 
+                  formatter={(value: number) => formatCurrency(value)}
+                  labelStyle={{ color: 'var(--foreground)' }}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="paid" name="Pagos" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="pending" name="Pendentes" fill="hsl(var(--warning))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="overdue" name="Vencidos" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
