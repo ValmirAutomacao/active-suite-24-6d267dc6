@@ -11,7 +11,7 @@ const routeNames: Record<string, string> = {
   '/guardian/dashboard': 'Minha Área',
   '/guardian/student': 'Dados do Aluno',
   '/guardian/payments': 'Mensalidades',
-  '/guardian/schedule': 'Agenda',
+  '/guardian/calendar': 'Agenda',
   '/guardian/contract': 'Contrato',
 };
 

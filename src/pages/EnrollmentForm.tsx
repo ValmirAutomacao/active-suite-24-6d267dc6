@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,12 +11,16 @@ import { User, Users, MapPin, Heart, Trophy, Calendar, ArrowRight, DollarSign } 
 import { useSports } from '@/hooks/useSports';
 import { toast } from 'sonner';
 import PhotoUpload from '@/components/shared/PhotoUpload';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
 const EnrollmentForm: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { profile, user, updateProfile } = useAuth();
+  const isGuardianFlow = location.pathname.startsWith('/guardian');
   const { data: sports, isLoading: sportsLoading } = useSports();
   const [currentTab, setCurrentTab] = useState('personal');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,6 +70,20 @@ const EnrollmentForm: React.FC = () => {
       dueDate: '5' // dia do vencimento
     }
   });
+
+  // Pré-preencher dados do guardian logado
+  useEffect(() => {
+    if (isGuardianFlow && user?.email) {
+      setFormData(prev => ({
+        ...prev,
+        guardian: {
+          ...prev.guardian,
+          name: profile?.full_name || '',
+          email: user.email || ''
+        }
+      }));
+    }
+  }, [isGuardianFlow, user, profile]);
 
   const handleInputChange = (field: string, value: any) => {
     const keys = field.split('.');
@@ -213,8 +231,17 @@ const EnrollmentForm: React.FC = () => {
 
       toast.success('Matrícula realizada com sucesso!');
 
-      // Redirecionar para lista de alunos
-      navigate('/students');
+      // Se for fluxo guardian, atualizar profile e redirecionar para dashboard
+      if (isGuardianFlow) {
+        await updateProfile({ 
+          onboarding_completed: true,
+          registration_flow: 'enrollment'
+        });
+        navigate('/guardian/dashboard');
+      } else {
+        // Fluxo admin - redirecionar para lista de alunos
+        navigate('/students');
+      }
 
     } catch (error: any) {
       console.error('Erro ao confirmar matrícula:', error);
