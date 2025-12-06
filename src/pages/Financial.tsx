@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, FileText, Send, Check, Filter, Receipt, Loader2, Plus, Search, Calendar, RefreshCw, Pencil, X } from 'lucide-react';
+import { DollarSign, FileText, Send, Check, Filter, Receipt, Loader2, Plus, Search, Calendar, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { usePayments, useMarkPaymentAsPaid, useUpdatePayment } from '@/hooks/usePayments';
+import { usePayments, useMarkPaymentAsPaid, useUpdatePayment, useDeletePayment } from '@/hooks/usePayments';
 import StatusBadge from '@/components/shared/StatusBadge';
 import Button from '@/components/shared/Button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,12 +20,14 @@ const Financial: React.FC = () => {
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingPayment, setEditingPayment] = useState<any>(null);
+  const [deletingPayment, setDeletingPayment] = useState<any>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
 
   const { data: allPayments = [], isLoading, isError, refetch } = usePayments();
   const markAsPaid = useMarkPaymentAsPaid();
   const updatePayment = useUpdatePayment();
+  const deletePayment = useDeletePayment();
 
   // Get unique months from payments
   const availableMonths = useMemo(() => {
@@ -137,6 +140,18 @@ const Financial: React.FC = () => {
       setEditingPayment(null);
     } catch (error: any) {
       toast.error(`Erro ao atualizar: ${error.message}`);
+    }
+  };
+
+  const handleDeletePayment = async () => {
+    if (!deletingPayment) return;
+    
+    try {
+      await deletePayment.mutateAsync(deletingPayment.id);
+      toast.success('Mensalidade excluída!');
+      setDeletingPayment(null);
+    } catch (error: any) {
+      toast.error(`Erro ao excluir: ${error.message}`);
     }
   };
 
@@ -449,6 +464,16 @@ const Financial: React.FC = () => {
                         >
                           <Send className="w-4 h-4" />
                         </Button>
+                        {payment.status !== 'paid' && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setDeletingPayment(payment)}
+                            title="Excluir mensalidade"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -550,6 +575,40 @@ const Financial: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingPayment} onOpenChange={(open) => !open && setDeletingPayment(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Mensalidade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta mensalidade?
+              {deletingPayment && (
+                <div className="mt-2 p-3 bg-muted rounded-md">
+                  <p><strong>Aluno:</strong> {deletingPayment.student_name}</p>
+                  <p><strong>Modalidade:</strong> {deletingPayment.sport}</p>
+                  <p><strong>Referência:</strong> {deletingPayment.month}</p>
+                  <p><strong>Valor:</strong> R$ {Number(deletingPayment.amount).toFixed(2)}</p>
+                </div>
+              )}
+              <p className="mt-2 text-destructive">Esta ação não pode ser desfeita.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePayment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletePayment.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Excluir'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
