@@ -4,10 +4,7 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.a736ac3fcf094a07b5b128046aeac9f7',
   appName: 'active-suite-24',
   webDir: 'dist',
-  server: {
-    url: 'https://a736ac3f-cf09-4a07-b5b1-28046aeac9f7.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
+  // server removido para produção - app carrega assets locais
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
